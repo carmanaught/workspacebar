@@ -6,6 +6,7 @@
  */
 
 const GLib = imports.gi.GLib;
+const Meta = imports.gi.Meta;
 const St = imports.gi.St;
 const Main = imports.ui.main;
 const Util = imports.misc.util;
@@ -25,6 +26,7 @@ const Keys = Me.imports.keys;
 
 const DEBUG = false;
 const PREFS_DIALOG = 'gnome-shell-extension-prefs workspace-bar@markbokil.com';
+const buttonPos = 2; //Put button second (maybe update this later based on position)
 
 function init(extensionMeta)
 {
@@ -143,7 +145,9 @@ WorkspaceBar.prototype = {
         let str = '';
 
         for (x=0; x <= workSpaces; x++) {
-            str =  (x+1).toString();
+            // Changed to use functions originally pinched from workspace-indicator (gcampax).
+            //  _labelNum was original and was modified and _labelText modelled off of it.
+            str = this._labelNum(x) + ": " + this._labelText(x)
             if ( x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
             } else {
@@ -168,6 +172,28 @@ WorkspaceBar.prototype = {
         
     },
 
+    // Originally _labelNum was taken from workspace-indicator (gcampax) and then
+    //  modified to only provide a number and _labelText was created to get the
+    //  label of the workspace.
+    
+    // Both label functions check if the index passed to the function is undefined
+    //  (called without a value I guess?) and assumes that it's the current
+    //  workspace if so.
+    _labelNum : function(workspaceIndex) {
+	if (workspaceIndex == undefined) {
+		workspaceIndex = this._currentWorkspace;
+	}
+	return (workspaceIndex + 1).toString(); // Add 1 to zero indexed value and convert to string
+	},
+    
+    // I don't check if there is no name, since for me, I'll always have one.
+	_labelText : function(workspaceIndex) {
+	if (workspaceIndex == undefined) {
+		workspaceIndex = this._currentWorkspace;
+	}
+	return Meta.prefs_get_workspace_name(workspaceIndex);// Get the name of the indexed workspace
+	},
+
     _removeAllChildren: function(box) {
         let children = box.get_children();
 
@@ -182,6 +208,13 @@ WorkspaceBar.prototype = {
     },
 
     _setWorkSpace: function(index) {
+        // Since the button press uses the text label, check if not a number then
+        //  shorten to two characters (since there's shortcut keys up to 12) and
+        //  remove any non-digit characters.
+        if (isNaN(index)) {
+            index = index.slice(0,2);
+            index = index.replace(/\D/g,'');
+        }
         index--; //button labels are 1,2,3, off by +1
 
         try {
@@ -199,8 +232,12 @@ WorkspaceBar.prototype = {
         this.currentWorkSpace = this._getCurrentWorkSpace() + offSet;
         let workSpaces = global.screen.n_workspaces - 1;
 
-        if (this.currentWorkSpace < 0) this.currentWorkSpace = 0;
-        if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = workSpaces;
+        // This was = 0 and = workSpaces for these two lines respectively
+        //  but was changed to allow the scroll to "wrap around". Switch
+        //  them back to stop the scroll of the first and last workspaces.
+        // Should look at creating a preferences for this.
+        if (this.currentWorkSpace < 0) this.currentWorkSpace = workSpaces;
+        if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = 0;
 
         this._setWorkSpace(this.currentWorkSpace + 1);
     },
