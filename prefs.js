@@ -3,7 +3,6 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
-const St = imports.gi.St;
 const Lang = imports.lang;
 const Gettext = imports.gettext.domain('markbokil.com-extensions;');
 const _ = Gettext.gettext;
