@@ -1,16 +1,18 @@
 
 .panelBox {
+    spacing: 1px;
 }
 
-.activeBtn, .inactiveBtn {
-	color: rgba(256, 256, 256, 1);
-	background-color: rgba(200, 200, 200, 1);
-	border: 1px solid #cccccc;
-	padding: 0 6px;
+.activeBtn {
+    padding: 0 8px;
+    color: #FFFFFF;
+    background-color: #285577;
+    border: 1px solid #4c7899;
 }
-
 
 .inactiveBtn {
-	color: rgba(256, 256, 256, .5);
-	background-color: rgba(200, 200, 200, .5);
+    padding: 0 8px;
+    color: #888888;
+    background-color: #222222;
+    border: 1px solid #333333;
 }
