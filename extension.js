@@ -62,6 +62,8 @@ WorkspaceBar.prototype = {
     },
 
     enable: function() {
+        this._windowTracker = Shell.WindowTracker.get_default();
+        let display = global.screen.get_display();
         this._settingsSignals = [];
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.OVERVIEW_MODE, Lang.bind(this, this._setOverViewMode)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.POSITION, Lang.bind(this, this._setPosition)));
@@ -82,8 +84,10 @@ WorkspaceBar.prototype = {
         this._screenSignals.push(global.screen.connect_after('workspace-removed', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-added', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-switched', Lang.bind(this, this._buildWorkSpaceBtns)));
-        this._screenSignals.push(global.screen.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
-        this._screenSignals.push(global.screen.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
+        // Connect after we've got display (let display above) to ensure we can get the signal
+        //   on 'MetaScreen' and avoid errors
+        this._screenSignals.push(display.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._screenSignals.push(display.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
         
         this._buildWorkSpaceBtns();
     },
@@ -94,14 +98,14 @@ WorkspaceBar.prototype = {
         this.buttonBox = null;
 
         // Disconnect screen signals
-        for (x = 0; x < this._screenSignals.length; x++) {
+        for (let x = 0; x < this._screenSignals.length; x++) {
             global.screen.disconnect(this._screenSignals[x]);
         }
         this._screenSignals = [];
         this._screenSignals = null;
 
         // Disconnect settings bindings
-        for (x = 0; x < this._settingsSignals.length; x++) {
+        for (let x = 0; x < this._settingsSignals.length; x++) {
             global.screen.disconnect(this._settingsSignals[x]);
         }
         this._settingsSignals = [];
@@ -165,7 +169,7 @@ WorkspaceBar.prototype = {
         let labelText = '';
         // GETS ALL EXISTING WINDOWS
         let windows = global.get_window_actors();
-        for (i = 0; i < windows.length; i++) {
+        for (let i = 0; i < windows.length; i++) {
             let winActor = windows[i];
             let win = winActor.meta_window;
             // Is .is_skip_taskbar() also relevant here?
@@ -177,7 +181,7 @@ WorkspaceBar.prototype = {
             emptyWorkspaces[workspaceIndex] = workspaceIndex;
         }
 
-        for (x = 0; x <= workSpaces; x++) {
+        for (let x = 0; x <= workSpaces; x++) {
             // Get the workspace name for the workspace
             labelText = Meta.prefs_get_workspace_name(x);
             // Add 1 to x so that workspace number output starts at 1
@@ -224,7 +228,7 @@ WorkspaceBar.prototype = {
         if (children) {
             let len = children.length;
 
-            for (x = len - 1; x >= 0; x--) {
+            for (let x = len - 1; x >= 0; x--) {
                 box.remove_actor(children[x]);
             }
         }
