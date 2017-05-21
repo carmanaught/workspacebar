@@ -58,7 +58,10 @@ WorkspaceBar.prototype = {
 
         let display = global.screen.get_display();
         // Connect after so the handler from ShellWindowTracker has already run
-        this._windowCreatedId = display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns));
+        this._initSignals = [];
+        this._initSignals.push(display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._initSignals.push(display.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._initSignals.push(display.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
     },
 
     enable: function() {
@@ -91,25 +94,26 @@ WorkspaceBar.prototype = {
         box.remove_actor(this.buttonBox);
         this.buttonBox = null;
 
-        // disconnect screen signals
+        // Disconnect screen signals
         for (x = 0; x < this._screenSignals.length; x++) {
             global.screen.disconnect(this._screenSignals[x]);
         }
         this._screenSignals = [];
         this._screenSignals = null;
 
-        // disconnect settings bindings
+        // Disconnect settings bindings
         for (x = 0; x < this._settingsSignals.length; x++) {
             global.screen.disconnect(this._settingsSignals[x]);
         }
         this._settingsSignals = [];
         this._settingsSignals = null;
         
-        // Copied from Auto Move Windows extension
-        if (this._windowCreatedId) {
-            global.screen.get_display().disconnect(this._windowCreatedId);
-            this._windowCreatedId = 0;
+        // Disconnect init signals
+        for (x = 0; x < this._initSignals.length; x++) {
+            global.screen.disconnect(this._initSignals[x]);
         }
+        this._initSignals = [];
+        this._initSignals = null;
     },
 
     _doPrefsDialog: function() {
@@ -157,6 +161,7 @@ WorkspaceBar.prototype = {
         this.buttons = []; //truncate arrays to release memory
         this.labels = [];
         let emptyWorkspaces = [];
+        let urgentWorkspaces = [];
         let workSpaces = global.screen.n_workspaces - 1;
         let str = '';
         let labelText = '';
@@ -165,9 +170,12 @@ WorkspaceBar.prototype = {
         for (i = 0; i < windows.length; i++) {
             let winActor = windows[i];
             let win = winActor.meta_window;
-            if (win.is_on_all_workspaces())
-                continue;
+            // Is .is_skip_taskbar() also relevant here?
+            if (win.is_on_all_workspaces()) { continue; }
             let workspaceIndex = win.get_workspace().index();
+            if (win.urgent || win.demands_attention) {
+                urgentWorkspaces[workspaceIndex] = workspaceIndex;
+            }
             emptyWorkspaces[workspaceIndex] = workspaceIndex;
         }
 
@@ -175,13 +183,20 @@ WorkspaceBar.prototype = {
             // Get the workspace name for the workspace
             labelText = Meta.prefs_get_workspace_name(x);
             // Add 1 to x so that workspace number output starts at 1
-            // Put code to check for preference, when added
-            str = (x + 1) + ": " + labelText;
+            // Check that workspace has label (returns "Workspace <Num>" if not),
+            //  which also explicitly blocks use of the word "Workspace" in a label.
+            if (labelText.indexOf("Workspace")) {
+                str = (x + 1) + ": " + labelText;
+            } else {
+                str = (x + 1).toString();
+            }
 
             // Need to check if x != the emptyWorkspaces[x] for the empty workspace check,
             //  since prefixing with a ! will return True (essentially equates to NotFalse)
             if (x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
+            } else if (x != this.currentWorkSpace && x == urgentWorkspaces[x]) {
+                this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
             } else if (x != this.currentWorkSpace && x != emptyWorkspaces[x]) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
             } else if (!emptyWorkspaces[x] || x != this.currentWorkSpace) {
@@ -196,7 +211,7 @@ WorkspaceBar.prototype = {
                 if (button == 3) { //right click
                     this._doPrefsDialog();
                 } else {
-                    //Use the buttons workspaceId for the index
+                    //Use the buttons workspaceId property for the index
                     this._setWorkSpace(actor.workspaceId);
                 }
             }));
