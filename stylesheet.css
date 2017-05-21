@@ -1,31 +1,40 @@
+/* This is for the spacing between buttons */
 .panelBox {
-    spacing: 1px;
+    spacing: 2px;
 }
 
+/* For 4 item borders/directions, the order is top, right, bottom, left
+   and for 2 items the order is top/bottom, left/right */
+
+/* There seems to be some bug with applying colors and only the top color
+   is used for all borders, so the border-color is supplied separately to
+   the border-bottom width and style. Even using the 4-set border-width
+   and border-style appears to have problems. */
+
 .activeBtn {
-    padding: 0 6px;
+    padding: 2px 8px 1px 8px;
     color: #FFFFFF;
-    background-color: #285577;
-    border: 1px solid #4c7899;
+    border-color: #4D8CBC;
+    border-bottom: 3px solid;
 }
 
 .urgentBtn {
-    padding: 0 6px;
-    color: #FFFFFF;
-    background-color: #900000;
-    border: 1px solid #2f343a;
+    padding: 2px 8px 1px 8px;
+    color: #E50909;
+    border-color: #E50909;
+    border-bottom: 3px solid;
 }
 
 .emptyBtn {
-    padding: 0 6px;
-    color: #444444;
-    background-color: #111111;
-    border: 1px solid #111111;
+    padding: 2px 8px 1px 8px;
+    color: #333333;
+    /*border-color: #222222;*/
+    border-bottom: 2px solid;
 }
 
 .inactiveBtn {
-    padding: 0 6px;
+    padding: 2px 8px 1px 8px;
     color: #888888;
-    background-color: #222222;
-    border: 1px solid #333333;
+    border-color: #444444;
+    border-bottom: 2px solid;
 }
