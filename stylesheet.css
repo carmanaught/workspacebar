@@ -9,11 +9,18 @@
     border: 1px solid #4c7899;
 }
 
+.urgentBtn {
+    padding: 0 6px;
+    color: #FFFFFF;
+    background-color: #900000;
+    border: 1px solid #2f343a;
+}
+
 .emptyBtn {
     padding: 0 6px;
-    color: #666666;
+    color: #444444;
     background-color: #111111;
-    border: 1px solid #222222;
+    border: 1px solid #111111;
 }
 
 .inactiveBtn {
