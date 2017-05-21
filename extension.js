@@ -58,10 +58,7 @@ WorkspaceBar.prototype = {
 
         let display = global.screen.get_display();
         // Connect after so the handler from ShellWindowTracker has already run
-        this._initSignals = [];
-        this._initSignals.push(display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns)));
-        this._initSignals.push(display.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
-        this._initSignals.push(display.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._windowCreatedId = display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns));
     },
 
     enable: function() {
@@ -85,7 +82,9 @@ WorkspaceBar.prototype = {
         this._screenSignals.push(global.screen.connect_after('workspace-removed', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-added', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-switched', Lang.bind(this, this._buildWorkSpaceBtns)));
-
+        this._screenSignals.push(global.screen.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._screenSignals.push(global.screen.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
+        
         this._buildWorkSpaceBtns();
     },
 
@@ -108,12 +107,11 @@ WorkspaceBar.prototype = {
         this._settingsSignals = [];
         this._settingsSignals = null;
         
-        // Disconnect init signals
-        for (x = 0; x < this._initSignals.length; x++) {
-            global.screen.disconnect(this._initSignals[x]);
+        // Copied from Auto Move Windows extension
+        if (this._windowCreatedId) {
+            global.screen.get_display().disconnect(this._windowCreatedId);
+            this._windowCreatedId = 0;
         }
-        this._initSignals = [];
-        this._initSignals = null;
     },
 
     _doPrefsDialog: function() {
