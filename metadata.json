@@ -6,16 +6,6 @@
   "name": "WorkspaceBar", 
   "settings-schema": "org.gnome.shell.extensions.workspacebar", 
   "shell-version": [
-    "3.4", 
-    "3.6",
-    "3.8",
-    "3.10",
-    "3.12",
-    "3.14",
-    "3.16",
-    "3.18",
-    "3.20",
-    "3.22",
     "3.24"
   ], 
   "url": "http://markbokil.com/downloads/extensions/", 
