@@ -28,8 +28,8 @@ const Convenience = Me.imports.convenience;
 const Keys = Me.imports.keys;
 
 const DEBUG = false;
-const PREFS_DIALOG = 'gnome-shell-extension-prefs workspace-bar@markbokil.com';
-const buttonPos = 2; //Put button second (maybe update this later based on position)
+const prefsDialog = 'gnome-shell-extension-prefs workspace-bar@markbokil.com';
+const defaultPos = 0;
 
 function init(extensionMeta) {
     return new WorkspaceBar(extensionMeta);
@@ -64,21 +64,40 @@ WorkspaceBar.prototype = {
     enable: function() {
         this._windowTracker = Shell.WindowTracker.get_default();
         let display = global.screen.get_display();
+        
+        // Set signals to get changes when made to preferences
         this._settingsSignals = [];
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.OVERVIEW_MODE, Lang.bind(this, this._setOverViewMode)));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.POSITION, Lang.bind(this, this._setPosition)));
-        this.overViewMode = this._settings.get_boolean(Keys.OVERVIEW_MODE);
-        this.boxPosition = this._settings.get_string(Keys.POSITION);
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPos, Lang.bind(this, this._setPosition)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosChange, Lang.bind(this, this._SetPositionChange)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosIndex, Lang.bind(this, this._SetPositionChange)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.overviewMode, Lang.bind(this, this._setOverviewMode)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, this._setWrapAroundMode)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.emptyWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.urgentWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
+        
+        // Get settings
+        this.boxPosition = this._settings.get_string(Keys.panelPos);
+        this.boxIndexChange = this._settings.get_boolean(Keys.panelPosChange);
+        this.boxIndex = this._settings.get_int(Keys.panelPosIndex);
+        this.overViewMode = this._settings.get_boolean(Keys.overviewMode);
+        this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
+        this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
+        this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
+        
         this.boxMain = new St.BoxLayout();
         this.boxMain.add_style_class_name("panelBox");
         this.buttonBox = new St.Button();
-        this.buttonBox.connect('enter-event', Lang.bind(this, this._showOverView));
+        this.buttonBox.connect('enter-event', Lang.bind(this, this._showOverview));
         this.buttonBox.add_actor(this.boxMain);
         this.currentWorkSpace = this._getCurrentWorkSpace();
-
-        // add box to panel
+        
+        // Add box to panel
         let box = Main.panel["_" + this.boxPosition + "Box"];
-        box.insert_child_at_index(this.buttonBox, 0);
+        if (this.boxIndexChange) {
+            box.insert_child_at_index(this.buttonBox, this.boxIndex);
+        } else {
+            box.insert_child_at_index(this.buttonBox, defaultPos);
+        }
 
         this._screenSignals = [];
         this._screenSignals.push(global.screen.connect_after('workspace-removed', Lang.bind(this, this._buildWorkSpaceBtns)));
@@ -120,19 +139,43 @@ WorkspaceBar.prototype = {
 
     _doPrefsDialog: function() {
         debug('right-click in onbtnpress: ');
-        Main.Util.trySpawnCommandLine(PREFS_DIALOG);
+        Main.Util.trySpawnCommandLine(prefsDialog);
 
     },
 
-    _setOverViewMode: function() {
-        if (this._settings.get_boolean(Keys.OVERVIEW_MODE)) {
+    _setOverviewMode: function() {
+        if (this._settings.get_boolean(Keys.overviewMode)) {
             this.overViewMode = true;
         } else {
             this.overViewMode = false;
         }
     },
+    
+    _setWrapAroundMode: function() {
+        if (this._settings.get_boolean(Keys.wrapAroundMode)) {
+            this.wraparoundMode = true;
+        } else {
+            this.wraparoundMode = false;
+        }
+    },
+    
+    _setWorkspaceStyle: function() {
+        if (this._settings.get_boolean(Keys.emptyWorkStyle)) {
+            this.emptyWorkspaceStyle = true;
+        } else {
+            this.emptyWorkspaceStyle = false;
+        }
+        
+        if (this._settings.get_boolean(Keys.urgentWorkStyle)) {
+            this.urgentWorkspaceStyle = true;
+        } else {
+            this.urgentWorkspaceStyle = false;
+        }
+        
+        this._buildWorkSpaceBtns();
+    },
 
-    _showOverView: function() {
+    _showOverview: function() {
         if (this.overViewMode) {
             if (!Main.overview.visible) {
                 Main.overview.show();
@@ -142,17 +185,33 @@ WorkspaceBar.prototype = {
 
     _setPosition: function() {
         let oldPosition = this.boxPosition;
-        this.boxPosition = this._settings.get_string(Keys.POSITION);
+        this.boxPosition = this._settings.get_string(Keys.panelPos);
 
-        // remove box
+        // Remove box
         let box = Main.panel["_" + oldPosition + "Box"];
         box.remove_actor(this.buttonBox);
 
-        // add box
+        // Add box
         box = Main.panel["_" + this.boxPosition + "Box"];
-        box.insert_child_at_index(this.buttonBox, 0);
+        if (this.boxIndexChange) {
+            box.insert_child_at_index(this.buttonBox, this.boxIndex);
+        } else {
+            box.insert_child_at_index(this.buttonBox, defaultPos);
+        }
     },
-
+    
+    _SetPositionChange: function() {
+        if (this._settings.get_boolean(Keys.panelPosChange)) {
+            this.boxIndexChange = true;
+        } else {
+            this.boxIndexChange = false;
+        }
+        
+        this.boxIndex = this._settings.get_int(Keys.panelPosIndex);
+        
+        this._setPosition();
+    },
+    
     _getCurrentWorkSpace: function() {
         return global.screen.get_active_workspace().index();
     },
@@ -167,8 +226,9 @@ WorkspaceBar.prototype = {
         let workSpaces = global.screen.n_workspaces - 1;
         let str = '';
         let labelText = '';
+        let windows = '';
         // GETS ALL EXISTING WINDOWS
-        let windows = global.get_window_actors();
+        windows = global.get_window_actors();
         for (let i = 0; i < windows.length; i++) {
             let winActor = windows[i];
             let win = winActor.meta_window;
@@ -198,9 +258,17 @@ WorkspaceBar.prototype = {
             if (x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
             } else if (x != this.currentWorkSpace && x == urgentWorkspaces[x]) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
+                if (this.urgentWorkspaceStyle) {
+                    this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
+                } else {
+                    this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
+                }
             } else if (x != this.currentWorkSpace && x != emptyWorkspaces[x]) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
+                if (this.emptyWorkspaceStyle) {
+                    this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
+                } else {
+                    this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
+                }
             } else if (!emptyWorkspaces[x] || x != this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
             }
@@ -249,12 +317,13 @@ WorkspaceBar.prototype = {
         this.currentWorkSpace = this._getCurrentWorkSpace() + offSet;
         let workSpaces = global.screen.n_workspaces - 1;
 
-        // This was = 0 and = workSpaces for these two lines respectively
-        //  but was changed to allow the scroll to "wrap around". Switch
-        //  them back to stop the scroll of the first and last workspaces.
-        // Should look at creating a preferences for this.
-        if (this.currentWorkSpace < 0) this.currentWorkSpace = workSpaces;
-        if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = 0;
+        if (this.wraparoundMode) {
+            if (this.currentWorkSpace < 0) this.currentWorkSpace = workSpaces;
+            if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = 0;
+        } else {
+            if (this.currentWorkSpace < 0) this.currentWorkSpace = 0;
+            if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = workSpaces;
+        }
 
         this._setWorkSpace(this.currentWorkSpace);
     },
