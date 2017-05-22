@@ -1,3 +1,9 @@
+/* Credit to gcampax and fmuellner who I have shamelessly taken the workspace
+   indicator settings from to add to a second tab in the preferences, to get
+   all the preference changing and workspace label updating done from the one
+   extensions (it doesn't seem to make much sense to have both extensions
+   active at the same time). */
+
 const GdkPixbuf = imports.gi.GdkPixbuf;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
@@ -8,21 +14,20 @@ const Pango = imports.gi.Pango;
 
 const Gettext = imports.gettext.domain('markbokil.com-extensions;');
 const _ = Gettext.gettext;
+const _N = function(x) { return x; }
+
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 const Keys = Me.imports.keys;
-
-const _N = function(x) { return x; }
 
 const positions = [
         "left",
         "center",
         "right"];
 
-function init() {
-    Convenience.initTranslations();
-}
+const WORKSPACE_SCHEMA = 'org.gnome.desktop.wm.preferences';
+const WORKSPACE_KEY = 'workspace-names';
 
 const WorkspaceBarSettings = new GObject.Class({
     Name: 'WorkspaceBarPrefs',
@@ -34,7 +39,6 @@ const WorkspaceBarSettings = new GObject.Class({
             title: "WorkspaceBar Settings"
         });
         
-        //this._grid = new Gtk.Grid();
         this.parent(params);
         this.margin = 10;
         this.column_spacing = 50;
@@ -235,9 +239,215 @@ const WorkspaceBarSettings = new GObject.Class({
     }
 });
 
+const WorkspaceNameModel = new GObject.Class({
+    Name: 'WorkspaceBar.WorkspaceNameModel',
+    GTypeName: 'WorkspaceNameModel',
+    Extends: Gtk.ListStore,
+
+    Columns: {
+        LABEL: 0,
+    },
+
+    _init: function(params) {
+        this.parent(params);
+        this.set_column_types([GObject.TYPE_STRING]);
+
+        this._wnsettings = new Gio.Settings({ schema_id: WORKSPACE_SCHEMA });
+        //this._wnsettings.connect('changed::workspace-names', Lang.bind(this, this._reloadFromSettings));
+
+        this._reloadFromSettings();
+
+        // overriding class closure doesn't work, because GtkTreeModel
+        // plays tricks with marshallers and class closures
+        this.connect('row-changed', Lang.bind(this, this._onRowChanged));
+        this.connect('row-inserted', Lang.bind(this, this._onRowInserted));
+        this.connect('row-deleted', Lang.bind(this, this._onRowDeleted));
+    },
+
+    _reloadFromSettings: function() {
+        if (this._preventChanges)
+            return;
+        this._preventChanges = true;
+
+        let newNames = this._wnsettings.get_strv(WORKSPACE_KEY);
+
+        let i = 0;
+        let [ok, iter] = this.get_iter_first();
+        while (ok && i < newNames.length) {
+            this.set(iter, [this.Columns.LABEL], [newNames[i]]);
+
+            ok = this.iter_next(iter);
+            i++;
+        }
+
+        while (ok)
+            ok = this.remove(iter);
+
+        for ( ; i < newNames.length; i++) {
+            iter = this.append();
+            this.set(iter, [this.Columns.LABEL], [newNames[i]]);
+        }
+
+        this._preventChanges = false;
+    },
+
+    _onRowChanged: function(self, path, iter) {
+        if (this._preventChanges)
+            return;
+        this._preventChanges = true;
+
+        let index = path.get_indices()[0];
+        let names = this._wnsettings.get_strv(WORKSPACE_KEY);
+
+        if (index >= names.length) {
+            // fill with blanks
+            for (let i = names.length; i <= index; i++)
+                names[i] = '';
+        }
+
+        names[index] = this.get_value(iter, this.Columns.LABEL);
+
+        this._wnsettings.set_strv(WORKSPACE_KEY, names);
+
+        this._preventChanges = false;
+    },
+
+    _onRowInserted: function(self, path, iter) {
+        if (this._preventChanges)
+            return;
+        this._preventChanges = true;
+
+        let index = path.get_indices()[0];
+        let names = this._wnsettings.get_strv(WORKSPACE_KEY);
+        let label = this.get_value(iter, this.Columns.LABEL) || '';
+        names.splice(index, 0, label);
+
+        this._wnsettings.set_strv(WORKSPACE_KEY, names);
+
+        this._preventChanges = false;
+    },
+
+    _onRowDeleted: function(self, path) {
+        if (this._preventChanges)
+            return;
+        this._preventChanges = true;
+
+        let index = path.get_indices()[0];
+        let names = this._wnsettings.get_strv(WORKSPACE_KEY);
+
+        if (index >= names.length)
+            return;
+
+        names.splice(index, 1);
+
+        // compact the array
+        for (let i = names.length -1; i >= 0 && !names[i]; i++)
+            names.pop();
+
+        this._wnsettings.set_strv(WORKSPACE_KEY, names);
+
+        this._preventChanges = false;
+    },
+});
+
+const WorkspaceSettingsWidget = new GObject.Class({
+    Name: 'WorkspaceBar.WorkspaceSettingsWidget',
+    GTypeName: 'WorkspaceSettingsWidget',
+    Extends: Gtk.Grid,
+
+    _init: function(params) {
+        this.parent(params);
+        this.margin = 12;
+        this.orientation = Gtk.Orientation.VERTICAL;
+
+        this.add(new Gtk.Label({ label: '<b>' + _("Workspace Names") + '</b>',
+                                 use_markup: true, margin_bottom: 6,
+                                 hexpand: true, halign: Gtk.Align.START }));
+
+        let scrolled = new Gtk.ScrolledWindow({ shadow_type: Gtk.ShadowType.IN });
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
+        this.add(scrolled);
+
+        this._store = new WorkspaceNameModel();
+        this._treeView = new Gtk.TreeView({ model: this._store,
+                                            headers_visible: false,
+                                            reorderable: true,
+                                            hexpand: true,
+                                            vexpand: true
+                                          });
+
+        let column = new Gtk.TreeViewColumn({ title: _("Name") });
+        let renderer = new Gtk.CellRendererText({ editable: true });
+        renderer.connect('edited', Lang.bind(this, this._cellEdited));
+        column.pack_start(renderer, true);
+        column.add_attribute(renderer, 'text', this._store.Columns.LABEL);
+        this._treeView.append_column(column);
+
+        scrolled.add(this._treeView);
+
+        let toolbar = new Gtk.Toolbar({ icon_size: Gtk.IconSize.SMALL_TOOLBAR });
+        toolbar.get_style_context().add_class(Gtk.STYLE_CLASS_INLINE_TOOLBAR);
+
+        let newButton = new Gtk.ToolButton({ icon_name: 'list-add-symbolic' });
+        newButton.connect('clicked', Lang.bind(this, this._newClicked));
+        toolbar.add(newButton);
+
+        let delButton = new Gtk.ToolButton({ icon_name: 'list-remove-symbolic' });
+        delButton.connect('clicked', Lang.bind(this, this._delClicked));
+        toolbar.add(delButton);
+
+        let selection = this._treeView.get_selection();
+        selection.connect('changed',
+            function() {
+                delButton.sensitive = selection.count_selected_rows() > 0;
+            });
+        delButton.sensitive = selection.count_selected_rows() > 0;
+
+        this.add(toolbar);
+    },
+
+    _cellEdited: function(renderer, path, new_text) {
+        let [ok, iter] = this._store.get_iter_from_string(path);
+
+        if (ok)
+            this._store.set(iter, [this._store.Columns.LABEL], [new_text]);
+    },
+
+    _newClicked: function() {
+        let iter = this._store.append();
+        let index = this._store.get_path(iter).get_indices()[0];
+
+        let label = _("Workspace %d").format(index + 1);
+        this._store.set(iter, [this._store.Columns.LABEL], [label]);
+    },
+
+    _delClicked: function() {
+        let [any, model, iter] = this._treeView.get_selection().get_selected();
+
+        if (any)
+            this._store.remove(iter);
+    }
+});
+
+function init() {
+    Convenience.initTranslations();
+}
+
 function buildPrefsWidget() {
-    let widget = new WorkspaceBarSettings();
-    widget.show_all();
+    this.notebook = new Gtk.Notebook();
     
-    return widget;
+    // Add the settings page
+    this.setPage = new Gtk.Box();
+    this.setPage.border_width = 10;
+    this.setPage.add(new WorkspaceBarSettings);
+    this.notebook.append_page(this.setPage, new Gtk.Label({label: "Settings"}));
+    
+    // Add the workspace names page
+    this.wsPage = new Gtk.Box();
+    this.wsPage.border_width = 10;
+    this.wsPage.add(new WorkspaceSettingsWidget);
+    this.notebook.append_page(this.wsPage, new Gtk.Label({label: "Workspace Names"}));
+
+    this.notebook.show_all();
+    return notebook;
 }
