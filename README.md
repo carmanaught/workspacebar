@@ -19,5 +19,5 @@ Changes to preferences
 
 ## Credits
 Thanks to mbokil for the original extension and thanks to these people for some code of theirs that I've used
-- gcampax
+- gcampax and fmuellner
 - null4bl3
