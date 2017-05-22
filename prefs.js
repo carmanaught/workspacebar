@@ -4,6 +4,8 @@ const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 const Lang = imports.lang;
+const Pango = imports.gi.Pango;
+
 const Gettext = imports.gettext.domain('markbokil.com-extensions;');
 const _ = Gettext.gettext;
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -13,86 +15,229 @@ const Keys = Me.imports.keys;
 
 const _N = function(x) { return x; }
 
-const SHOW_OVERVIEW = _N("Show Overview");
-const RADIO_BTNS = [
+const positions = [
         "left",
         "center",
-        "right"
-    ];
+        "right"];
 
 function init() {
     Convenience.initTranslations();
 }
 
-function WorkspaceBarSettingsWidget() {
-    this._init();
-}
-
-WorkspaceBarSettingsWidget.prototype = {
-
-    _init: function() {
-        this._grid = new Gtk.Grid();
-        this._grid.margin = this._grid.row_spacing = this._grid.column_spacing = 10;
+const WorkspaceBarSettings = new GObject.Class({
+    Name: 'WorkspaceBarPrefs',
+    Extends: Gtk.Grid,
+    
+    _init: function(params) {
+        this._window = new Gtk.ApplicationWindow({
+            window_position: Gtk.WindowPosition.CENTER,
+            title: "WorkspaceBar Settings"
+        });
+        
+        //this._grid = new Gtk.Grid();
+        this.parent(params);
+        this.margin = 10;
+        this.column_spacing = 50;
+        this.row_spacing = 10;
 	    this._settings = Convenience.getSettings();
 
-        //overview switch
-        this._grid.attach(new Gtk.Label({ label: _(SHOW_OVERVIEW), wrap: true, xalign: 0.0 }), 0,  0, 1, 1);
-        let overlaySwitch = new Gtk.Switch({active: this._settings.get_boolean(Keys.OVERVIEW_MODE)});
-        this._grid.attach(overlaySwitch, 4, 0, 1, 1);
+        // Start building the objects
 
-        overlaySwitch.connect('notify::active', Lang.bind(this, this._setOverViewMode));
+        // Position Settings label
+        let lblPosTitle = new Gtk.Label({
+            label: "<b>Position Settings</b>",
+            hexpand: true,
+            halign: Gtk.Align.START,
+            use_markup: true
+        });
+        // Easiest way to understand attach format:-
+        //   Object, Column, Row, ColSpan, RowSpan
+        this.attach(lblPosTitle, 0, 0, 2, 1);
+        
+        // Workspace position label
+        let lblPosition = new Gtk.Label({
+            label: "WorkspaceBar position",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblPosition, 0, 1, 1, 1);
+        
+        // Workspace position dropdown
+        this.cmbPosition = new Gtk.ComboBoxText({
+            halign: Gtk.Align.END
+        });
+        for (let i = 0; i < positions.length; i++)
+            this.cmbPosition.append_text(this._capCase(positions[i]));
+        this.cmbPosition.set_active(0);
+        this.cmbPosition.connect ('changed', Lang.bind (this, this._onPositionChanged));
+        this.attach(this.cmbPosition, 1, 1, 1, 1);
+        
+        // Position Index enable label
+        let lblPositionEnable = new Gtk.Label({
+            label: "Change the index for the bar position",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblPositionEnable, 0, 2, 1, 1);
+        
+        // Position Index enable switch
+        let swPositionIndexEnable = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.panelPosChange),
+            halign: Gtk.Align.END
+        });
+        swPositionIndexEnable.connect ('notify::active', Lang.bind (this, this._setIndexEnableChange));
+        this.attach(swPositionIndexEnable, 1, 2, 1, 1);
+                
+        // Position Index label
+        let lblPositionIndex = new Gtk.Label({
+            label: "Specify position index",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblPositionIndex, 0, 3, 1, 1);
+        
+        // Position Index adjustment
+        this._adjPositionIndex = new Gtk.Adjustment ({
+            //Don't set value here, we'll get it after creating the spin button
+            lower: -999,
+            upper: 999,
+            step_increment: 1,
+            page_increment: 10
+        });
 
+        // Position Index spinbutton
+        this.spnPosition = new Gtk.SpinButton ({
+            adjustment: this._adjPositionIndex,
+            halign: Gtk.Align.END
+        });
+        this.spnPosition.set_value (this._settings.get_int(Keys.panelPosIndex));
+        this.spnPosition.set_digits (0);
+        this.spnPosition.set_wrap (false);
+        this.spnPosition.connect ('value-changed', Lang.bind (this, this._setPositionIndexChange));
+        this.attach(this.spnPosition, 1, 3, 1, 1);
+        
+        // General Settings label
+        let lblGenTitle = new Gtk.Label({
+            label: "<b>General Settings</b>",
+            hexpand: true,
+            halign: Gtk.Align.START,
+            use_markup: true
+        });
+        this.attach(lblGenTitle, 0, 4, 2, 1);
+        
+        // Show Overview label
+        let lblOverview = new Gtk.Label({
+            label: "Show overview when mousing over the workspace bar",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblOverview, 0, 5, 1, 1);
+        
+        // Show Overview switch
+        let swOverlay = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.overviewMode),
+            halign: Gtk.Align.END
+        });
+        swOverlay.connect ('notify::active', Lang.bind (this, this._setOverViewMode));
+        this.attach(swOverlay, 1, 5, 1, 1);
+        
+        // Show Wrap Around label
+        let lblWrapAround = new Gtk.Label({
+            label: "Wrap around when scrolling over the workspace bar",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblWrapAround, 0, 6, 1, 1);
 
-        let introLabel = _("Panel Position");
-        let radio = null;
-
-        this._grid.attach(new Gtk.Label({ label: introLabel, wrap: true, sensitive: true,
-                                     margin_bottom: 10, margin_top: 5 }),
-                                    0, 1, 1, 1);
-
-        //build radio buttons
-        let currentPosition = this._settings.get_string(Keys.POSITION);
-        let count = 4;
-        let str = '';
-        for (element in RADIO_BTNS) {
-            let str = RADIO_BTNS[element];
-            radio = new Gtk.RadioButton({ group: radio, label: this._capitalised(str), valign: Gtk.Align.START });
-            this._grid.attach(radio, count, 1, 1, 1);
-
-            radio.connect('toggled', Lang.bind(this, function(widget) {
-                if (widget.active)
-                    this._settings.set_string(Keys.POSITION, str);
-                }));
-
-            if (currentPosition == str) radio.active = true;
-            count++
-        }
+        // Show Wrap Around switch
+        let swWrapAround = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.wrapAroundMode),
+            halign: Gtk.Align.END
+        });
+        swWrapAround.connect ('notify::active', Lang.bind (this, this._setWrapAroundMode));
+        this.attach(swWrapAround, 1, 6, 1, 1);
+        
+        // Show Empty Workspace label
+        let lblEmptyWorkspace = new Gtk.Label({
+            label: "Enable styling to indicate empty workspaces",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblEmptyWorkspace, 0, 7, 1, 1);
+        
+        // Show Empty Workspace switch
+        let swEmptyWorkspace = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.emptyWorkStyle),
+            halign: Gtk.Align.END
+        });
+        swEmptyWorkspace.connect ('notify::active', Lang.bind (this, this._setEmptyWorkspaceStyle));
+        this.attach(swEmptyWorkspace, 1, 7, 1, 1);
+        
+        // Show Urgent Workspace label
+        let lblUrgentWorkspace = new Gtk.Label({
+            label: "Enable styling to indicate urgent workspaces",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblUrgentWorkspace, 0, 8, 1, 1);
+        
+        // Show Urgent Workspace switch
+        let swUrgentWorkspace = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.urgentWorkStyle),
+            halign: Gtk.Align.END
+        });
+        swUrgentWorkspace.connect ('notify::active', Lang.bind (this, this._setUrgentWorkspaceStyle));
+        this.attach(swUrgentWorkspace, 1, 8, 1, 1);
     },
-
-    _capitalised: function(str) {
+    
+    _capCase: function(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },
+    
+    _onPositionChanged: function() {
+        let activeItem = this.cmbPosition.get_active();
+        this._settings.set_string(Keys.panelPos, positions[activeItem]);
+    },
+    
+    _setIndexEnableChange: function(object) {
+        this._settings.set_boolean(Keys.panelPosChange, object.active);
+    },
 
+    _setPositionIndexChange: function(object) {
+        //Add position Index change handling
+        this._settings.set_int(Keys.panelPosIndex, object.value);
+    },
+    
     _setOverViewMode: function(object) {
-        this._settings.set_boolean(Keys.OVERVIEW_MODE, object.active);
+        this._settings.set_boolean(Keys.overviewMode, object.active);
     },
-
+    
+    _setWrapAroundMode: function(object) {
+        this._settings.set_boolean(Keys.wrapAroundMode, object.active);
+    },
+    
+    _setEmptyWorkspaceStyle: function(object) {
+        this._settings.set_boolean(Keys.emptyWorkStyle, object.active);
+    },
+    
+    _setUrgentWorkspaceStyle: function(object) {
+        this._settings.set_boolean(Keys.urgentWorkStyle, object.active);
+    },
+    
     _resetSettings: function() {
-        this._settings.set_boolean(Keys.OVERVIEW_MODE, false);
-    },
-
-    _completePrefsWidget: function() {
-        let scollingWindow = new Gtk.ScrolledWindow({
-                                 'hscrollbar-policy': Gtk.PolicyType.AUTOMATIC,
-                                 'vscrollbar-policy': Gtk.PolicyType.AUTOMATIC,
-                                 'hexpand': true, 'vexpand': true});
-        scollingWindow.add_with_viewport(this._grid);
-        scollingWindow.show_all();
-        return scollingWindow;
+        this._settings.set_string(Keys.panelPos, positions[0]);
+        this._settings.set_boolean(Keys.panelPosChange, false);
+        this._settings.set_int(Keys.panelPosIndex, 1);
+        this._settings.set_boolean(Keys.overviewMode, false);
+        this._settings.set_boolean(Keys.wrapAroundMode, true);
+        this._settings.set_boolean(Keys.emptyWorkStyle, true);
+        this._settings.set_boolean(Keys.urgentWorkStyle, true);
     }
-};
+});
 
 function buildPrefsWidget() {
-    let widget = new WorkspaceBarSettingsWidget();
-    return widget._completePrefsWidget();
+    let widget = new WorkspaceBarSettings();
+    widget.show_all();
+    
+    return widget;
 }
