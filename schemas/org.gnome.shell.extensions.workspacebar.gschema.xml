@@ -1,15 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="markbokil.com-extensions">
   <schema path="/org/gnome/shell/extensions/workspacebar/" id="org.gnome.shell.extensions.workspacebar">
-    <key type="b" name="overview-mode-key">
+    <key type="s" name="panel-position">
+     	<default>'left'</default>
+    	<summary>Position on panel.</summary>
+      	<description>Sets the position of the extension on the panel. Possible values are: Left, Center, and Right.</description>
+    </key>
+    <key type="b" name="panel-position-change">
+     	<default>false</default>
+    	<summary>Enabled index position change.</summary>
+     	<description>Allows the change of the numerical index position within the Left/Right/Center positions.</description>
+    </key>
+    <key type="i" name="panel-position-index">
+     	<default>1</default>
+    	<summary>Index position</summary>
+     	<description>Specifies the index position with positive values changing 'first from left' and negative values changing 'first from right' (best used with Right alignment). Possible values range from -999 to 999.</description>
+    </key>
+    <key type="b" name="overview-mode">
      	<default>false</default>
     	<summary>Enable overview mode.</summary>
      	<description>Allows overview to be opened when you mouse over the workspace bar.</description>
     </key>
-    <key type="s" name="panel-position-key">
-     	<default>'center'</default>
-    	<summary>Position on panel.</summary>
-      	<description>Sets the position of the extension on the panel. Possible values are: Left, Center, and Right.</description>
+    <key type="b" name="wrap-around-mode">
+     	<default>true</default>
+    	<summary>Enable wrap-around mode.</summary>
+     	<description>Wraps around from the last workspace to the first workspace when scrolling over the workspace bar.</description>
+    </key>
+    <key type="b" name="empty-workspace-style">
+     	<default>true</default>
+    	<summary>Enable empty workspace styling.</summary>
+     	<description>Enables the use of the empty workspace styling which is intended to indicate that no windows are active on a given workspace.</description>
+    </key>
+    <key type="b" name="urgent-workspace-style">
+     	<default>true</default>
+    	<summary>Enable urgent workspace styling.</summary>
+     	<description>Enables the use of the urgent workspace styling which is intended to indicate that a window demands attention or has an urgent window hint.</description>
     </key>
   </schema>
 </schemalist>
