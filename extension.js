@@ -237,9 +237,22 @@ WorkspaceBar.prototype = {
             if (win.is_on_all_workspaces()) { continue; }
             let workspaceIndex = win.get_workspace().index();
             if (win.urgent || win.demands_attention) {
-                urgentWorkspaces[workspaceIndex] = workspaceIndex;
+                if (this.urgentWorkspaceStyle) {
+                    urgentWorkspaces[workspaceIndex] = "urgent";
+                }
             }
             emptyWorkspaces[workspaceIndex] = workspaceIndex;
+        }
+        
+        // Check for and identify actual empty workspaces
+        for (let i = 0; i < workSpaces; i++) {
+            if (this.emptyWorkspaceStyle) {
+                if (emptyWorkspaces[i] == undefined) {
+                    emptyWorkspaces[i] = "empty";
+                } else {
+                    emptyWorkspaces[i] = "notempty";
+                }
+            }
         }
 
         for (let x = 0; x <= workSpaces; x++) {
@@ -254,22 +267,14 @@ WorkspaceBar.prototype = {
                 str = (x + 1).toString();
             }
 
-            // Need to check if x != the emptyWorkspaces[x] for the empty workspace check,
-            //  since prefixing with a ! will return True (essentially equates to NotFalse)
+            // Can't use true/false for indicators since it conflicts with workspace numbers
+            //   equating to false (0) or true (1), so specific strings are used and checked.
             if (x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
-            } else if (x != this.currentWorkSpace && x == urgentWorkspaces[x]) {
-                if (this.urgentWorkspaceStyle) {
-                    this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
-                } else {
-                    this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
-                }
-            } else if (x != this.currentWorkSpace && x != emptyWorkspaces[x]) {
-                if (this.emptyWorkspaceStyle) {
-                    this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
-                } else {
-                    this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
-                }
+            } else if (x != this.currentWorkSpace && urgentWorkspaces[x] == "urgent") {
+                this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
+            } else if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty") {
+                this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
             } else if (!emptyWorkspaces[x] || x != this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
             }
