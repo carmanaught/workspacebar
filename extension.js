@@ -100,6 +100,7 @@ WorkspaceBar.prototype = {
         }
 
         this._screenSignals = [];
+        this._screenSignals.push(global.screen.connect('window-left-monitor', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-removed', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-added', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-switched', Lang.bind(this, this._buildWorkSpaceBtns)));
