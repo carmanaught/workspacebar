@@ -239,18 +239,20 @@ WorkspaceBar.prototype = {
             if (win.urgent || win.demands_attention) {
                 if (this.urgentWorkspaceStyle) {
                     urgentWorkspaces[workspaceIndex] = "urgent";
+                } else {
+                    urgentWorkspaces[workspaceIndex] = "not-urgent";
                 }
             }
             emptyWorkspaces[workspaceIndex] = workspaceIndex;
         }
         
         // Check for and identify actual empty workspaces
-        for (let i = 0; i < workSpaces; i++) {
+        for (let i = 0; i <= workSpaces; i++) {
             if (this.emptyWorkspaceStyle) {
                 if (emptyWorkspaces[i] == undefined) {
                     emptyWorkspaces[i] = "empty";
                 } else {
-                    emptyWorkspaces[i] = "notempty";
+                    emptyWorkspaces[i] = "not-empty";
                 }
             }
         }
