@@ -22,7 +22,7 @@
      	<description>Allows overview to be opened when you mouse over the workspace bar.</description>
     </key>
     <key type="b" name="wrap-around-mode">
-     	<default>true</default>
+     	<default>false</default>
     	<summary>Enable wrap-around mode.</summary>
      	<description>Wraps around from the last workspace to the first workspace when scrolling over the workspace bar.</description>
     </key>
@@ -35,6 +35,11 @@
      	<default>true</default>
     	<summary>Enable urgent workspace styling.</summary>
      	<description>Enables the use of the urgent workspace styling which is intended to indicate that a window demands attention or has an urgent window hint.</description>
+    </key>
+    <key type="i" name="prefs-mouse-button">
+     	<default>3</default>
+    	<summary>Specify mouse button to open preferences.</summary>
+     	<description>Specifies which mouse button is used to open the preferences. Options are Middle (2) or Right (3). Defaults to Right (3).</description>
     </key>
   </schema>
 </schemalist>
