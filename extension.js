@@ -29,7 +29,6 @@ const Keys = Me.imports.keys;
 
 const DEBUG = false;
 const prefsDialog = 'gnome-shell-extension-prefs workspace-bar@markbokil.com';
-const defaultPos = 0;
 
 function init(extensionMeta) {
     return new WorkspaceBar(extensionMeta);
@@ -74,6 +73,7 @@ WorkspaceBar.prototype = {
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, this._setWrapAroundMode)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.emptyWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.urgentWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
+         this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, this._setMouseBtn)));
         
         // Get settings
         this.boxPosition = this._settings.get_string(Keys.panelPos);
@@ -83,6 +83,7 @@ WorkspaceBar.prototype = {
         this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
         this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
+        this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
         
         this.boxMain = new St.BoxLayout();
         this.boxMain.add_style_class_name("panelBox");
@@ -96,7 +97,7 @@ WorkspaceBar.prototype = {
         if (this.boxIndexChange) {
             box.insert_child_at_index(this.buttonBox, this.boxIndex);
         } else {
-            box.insert_child_at_index(this.buttonBox, defaultPos);
+            box.insert_child_at_index(this.buttonBox, 0); // We'll use 0 as the default position
         }
 
         this._screenSignals = [];
@@ -139,9 +140,7 @@ WorkspaceBar.prototype = {
     },
 
     _doPrefsDialog: function() {
-        debug('right-click in onbtnpress: ');
         Main.Util.trySpawnCommandLine(prefsDialog);
-
     },
 
     _setOverviewMode: function() {
@@ -174,6 +173,10 @@ WorkspaceBar.prototype = {
         }
         
         this._buildWorkSpaceBtns();
+    },
+    
+    _setMouseBtn: function() {
+        this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
     },
 
     _showOverview: function() {
@@ -286,7 +289,7 @@ WorkspaceBar.prototype = {
             this.buttons[x].workspaceId = x;
             this.buttons[x].connect('button-press-event', Lang.bind(this, function(actor, event) {
                 let button = event.get_button();
-                if (button == 3) { //right click
+                if (button == this.btnMouseBtn) { //This preference defaults to right-mouse
                     this._doPrefsDialog();
                 } else {
                     //Use the buttons workspaceId property for the index
