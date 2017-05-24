@@ -25,6 +25,8 @@ const positions = [
         "left",
         "center",
         "right"];
+const mBtnNum = [2, 3];
+const mBtnBtn = ["Middle", "Right"];
 
 const WORKSPACE_SCHEMA = 'org.gnome.desktop.wm.preferences';
 const WORKSPACE_KEY = 'workspace-names';
@@ -70,9 +72,11 @@ const WorkspaceBarSettings = new GObject.Class({
         this.cmbPosition = new Gtk.ComboBoxText({
             halign: Gtk.Align.END
         });
-        for (let i = 0; i < positions.length; i++)
+        for (let i = 0; i < positions.length; i++) {
             this.cmbPosition.append_text(this._capCase(positions[i]));
+        }
         this.cmbPosition.set_active(0);
+        //this.cmbPosition.set_active(positions.indexOf(_capCase(this._settings.get_string(Keys.panelPos)));
         this.cmbPosition.connect ('changed', Lang.bind (this, this._onPositionChanged));
         this.attach(this.cmbPosition, 1, 1, 1, 1);
         
@@ -192,6 +196,25 @@ const WorkspaceBarSettings = new GObject.Class({
         });
         swUrgentWorkspace.connect ('notify::active', Lang.bind (this, this._setUrgentWorkspaceStyle));
         this.attach(swUrgentWorkspace, 1, 8, 1, 1);
+        
+        // Preferences mouse button label
+        let lblMouseBtn = new Gtk.Label({
+            label: "Button to open the preferences dialog",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblMouseBtn, 0, 9, 1, 1);
+        
+        // Preferences mouse button dropdown
+        this.cmbMouseBtn = new Gtk.ComboBoxText({
+            halign: Gtk.Align.END
+        });
+        for (let i = 0; i < mBtnBtn.length; i++) {
+            this.cmbMouseBtn.append_text(mBtnBtn[i]);
+        }
+        this.cmbMouseBtn.set_active(mBtnNum.indexOf(this._settings.get_int(Keys.prefsMouseBtn)));
+        this.cmbMouseBtn.connect ('changed', Lang.bind (this, this._onBtnChanged));
+        this.attach(this.cmbMouseBtn, 1, 9, 1, 1);
     },
     
     _capCase: function(str) {
@@ -208,7 +231,6 @@ const WorkspaceBarSettings = new GObject.Class({
     },
 
     _setPositionIndexChange: function(object) {
-        //Add position Index change handling
         this._settings.set_int(Keys.panelPosIndex, object.value);
     },
     
@@ -228,14 +250,20 @@ const WorkspaceBarSettings = new GObject.Class({
         this._settings.set_boolean(Keys.urgentWorkStyle, object.active);
     },
     
+    _onBtnChanged: function() {
+        let activeItem = this.cmbMouseBtn.get_active();
+        this._settings.set_int(Keys.prefsMouseBtn, mBtnNum[activeItem]);
+    },
+    
     _resetSettings: function() {
         this._settings.set_string(Keys.panelPos, positions[0]);
         this._settings.set_boolean(Keys.panelPosChange, false);
         this._settings.set_int(Keys.panelPosIndex, 1);
         this._settings.set_boolean(Keys.overviewMode, false);
-        this._settings.set_boolean(Keys.wrapAroundMode, true);
+        this._settings.set_boolean(Keys.wrapAroundMode, false);
         this._settings.set_boolean(Keys.emptyWorkStyle, true);
         this._settings.set_boolean(Keys.urgentWorkStyle, true);
+        this._settings.set_boolean(Keys.urgentWorkStyle, mBtnNum[1]);
     }
 });
 
