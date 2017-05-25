@@ -41,5 +41,15 @@
     	<summary>Specify mouse button to open preferences.</summary>
      	<description>Specifies which mouse button is used to open the preferences. Options are Middle (2) or Right (3). Defaults to Right (3).</description>
     </key>
+    <key type="s" name="workspace-label-format">
+     	<default>'Number and Name'</default>
+    	<summary>Workspace label separator.</summary>
+      	<description>Specifies the separator to be used between the workspace number and the workspace title, if being displayed.</description>
+    </key>
+    <key type="s" name="workspace-label-separator">
+     	<default>': '</default>
+    	<summary>Workspace label separator.</summary>
+      	<description>Specifies the separator to be used between the workspace number and the workspace title, if being displayed.</description>
+    </key>
   </schema>
 </schemalist>

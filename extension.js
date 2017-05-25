@@ -8,6 +8,7 @@
  */
 
 const Clutter = imports.gi.Clutter;
+const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Meta = imports.gi.Meta;
 const Shell = imports.gi.Shell;
@@ -29,6 +30,9 @@ const Keys = Me.imports.keys;
 
 const DEBUG = false;
 const prefsDialog = 'gnome-shell-extension-prefs workspace-bar@markbokil.com';
+
+const WORKSPACE_SCHEMA = 'org.gnome.desktop.wm.preferences';
+const WORKSPACE_KEY = 'workspace-names';
 
 function init(extensionMeta) {
     return new WorkspaceBar(extensionMeta);
@@ -69,11 +73,24 @@ WorkspaceBar.prototype = {
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPos, Lang.bind(this, this._setPosition)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosChange, Lang.bind(this, this._SetPositionChange)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosIndex, Lang.bind(this, this._SetPositionChange)));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.overviewMode, Lang.bind(this, this._setOverviewMode)));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, this._setWrapAroundMode)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.overviewMode, Lang.bind(this, function(w) {
+            this.overViewMode = this._settings.get_boolean(Keys.overviewMode);
+        })));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, function(w) {
+            this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
+        })));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.emptyWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.urgentWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
-         this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, this._setMouseBtn)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, function(w) {
+            this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
+        })));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelFormat, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelSeparator, Lang.bind(this, this._setWorkspaceFormat)));
+        
+        // Detect workspace name changes and update buttons accordingly
+        this._wkspNameSettings = new Gio.Settings({ schema_id: WORKSPACE_SCHEMA });
+        this._settingsSignals.push(this._wkspNameSettings.connect('changed::' + WORKSPACE_KEY, Lang.bind(this, this._buildWorkSpaceBtns)));
+         
         
         // Get settings
         this.boxPosition = this._settings.get_string(Keys.panelPos);
@@ -84,6 +101,8 @@ WorkspaceBar.prototype = {
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
         this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
         this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
+        this.wkspLabelFormat = this._settings.get_string(Keys.labelFormat);
+        this.wkspLabelSeparator = this._settings.get_string(Keys.labelSeparator);
         
         this.boxMain = new St.BoxLayout();
         this.boxMain.add_style_class_name("panelBox");
@@ -142,43 +161,19 @@ WorkspaceBar.prototype = {
     _doPrefsDialog: function() {
         Main.Util.trySpawnCommandLine(prefsDialog);
     },
-
-    _setOverviewMode: function() {
-        if (this._settings.get_boolean(Keys.overviewMode)) {
-            this.overViewMode = true;
-        } else {
-            this.overViewMode = false;
-        }
-    },
-    
-    _setWrapAroundMode: function() {
-        if (this._settings.get_boolean(Keys.wrapAroundMode)) {
-            this.wraparoundMode = true;
-        } else {
-            this.wraparoundMode = false;
-        }
-    },
     
     _setWorkspaceStyle: function() {
-        if (this._settings.get_boolean(Keys.emptyWorkStyle)) {
-            this.emptyWorkspaceStyle = true;
-        } else {
-            this.emptyWorkspaceStyle = false;
-        }
-        
-        if (this._settings.get_boolean(Keys.urgentWorkStyle)) {
-            this.urgentWorkspaceStyle = true;
-        } else {
-            this.urgentWorkspaceStyle = false;
-        }
-        
+        this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
+        this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
         this._buildWorkSpaceBtns();
     },
     
-    _setMouseBtn: function() {
-        this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
+    _setWorkspaceFormat: function() {
+        this.wkspLabelFormat = this._settings.get_string(Keys.labelFormat);
+        this.wkspLabelSeparator = this._settings.get_string(Keys.labelSeparator);
+        this._buildWorkSpaceBtns();
     },
-
+    
     _showOverview: function() {
         if (this.overViewMode) {
             if (!Main.overview.visible) {
@@ -200,17 +195,12 @@ WorkspaceBar.prototype = {
         if (this.boxIndexChange) {
             box.insert_child_at_index(this.buttonBox, this.boxIndex);
         } else {
-            box.insert_child_at_index(this.buttonBox, defaultPos);
+            box.insert_child_at_index(this.buttonBox, 0);
         }
     },
     
     _SetPositionChange: function() {
-        if (this._settings.get_boolean(Keys.panelPosChange)) {
-            this.boxIndexChange = true;
-        } else {
-            this.boxIndexChange = false;
-        }
-        
+        this.boxIndexChange = this._settings.get_boolean(Keys.panelPosChange);
         this.boxIndex = this._settings.get_int(Keys.panelPosIndex);
         
         this._setPosition();
@@ -261,16 +251,36 @@ WorkspaceBar.prototype = {
         }
 
         for (let x = 0; x <= workSpaces; x++) {
+            let emptyName = false;
             // Get the workspace name for the workspace
-            labelText = Meta.prefs_get_workspace_name(x);
-            // Add 1 to x so that workspace number output starts at 1
+            let labelText = Meta.prefs_get_workspace_name(x);
+
             // Check that workspace has label (returns "Workspace <Num>" if not),
             //  which also explicitly blocks use of the word "Workspace" in a label.
-            if (labelText.indexOf("Workspace")) {
-                str = (x + 1) + ": " + labelText;
+            if (labelText.indexOf("Workspace") == -1) {
+                emptyName = true;
+            }
+            
+            switch (this.wkspLabelFormat) {
+                case "Number Only":
+                    str = (x + 1).toString();
+                    break;
+                case "Number and Name":
+                    str = (x + 1) + this.wkspLabelSeparator + labelText;
+                    break;
+                case "Name Only":
+                    str = labelText;
+                    break;
+                default:
+                    str = (x + 1).toString();
+            }
+            
+            /*
+            if (labelText.indexOf("Workspace") == -1) {
+                str = (x + 1) + this.wkspLabelSeparator + labelText;
             } else {
                 str = (x + 1).toString();
-            }
+            }*/
 
             // Can't use true/false for indicators since it conflicts with workspace numbers
             //   equating to false (0) or true (1), so specific strings are used and checked.
@@ -354,3 +364,4 @@ WorkspaceBar.prototype = {
         this._activateScroll(offSet);
     }
 }
+

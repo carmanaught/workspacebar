@@ -27,6 +27,10 @@ const positions = [
         "right"];
 const mBtnNum = [2, 3];
 const mBtnBtn = ["Middle", "Right"];
+const labelFormats = [
+        "Number Only",
+        "Number and Name",
+        "Name Only"];
 
 const WORKSPACE_SCHEMA = 'org.gnome.desktop.wm.preferences';
 const WORKSPACE_KEY = 'workspace-names';
@@ -75,8 +79,8 @@ const WorkspaceBarSettings = new GObject.Class({
         for (let i = 0; i < positions.length; i++) {
             this.cmbPosition.append_text(this._capCase(positions[i]));
         }
-        this.cmbPosition.set_active(0);
-        //this.cmbPosition.set_active(positions.indexOf(_capCase(this._settings.get_string(Keys.panelPos)));
+        this.cmbPosition.set_active(positions.indexOf(this._settings.get_string(Keys.panelPos)));
+        this._onPositionChanged(this.cmbPosition); // If empty, set to default, if not, set to current
         this.cmbPosition.connect ('changed', Lang.bind (this, this._onPositionChanged));
         this.attach(this.cmbPosition, 1, 1, 1, 1);
         
@@ -93,6 +97,7 @@ const WorkspaceBarSettings = new GObject.Class({
             active: this._settings.get_boolean(Keys.panelPosChange),
             halign: Gtk.Align.END
         });
+        this._setIndexEnableChange(swPositionIndexEnable);
         swPositionIndexEnable.connect ('notify::active', Lang.bind (this, this._setIndexEnableChange));
         this.attach(swPositionIndexEnable, 1, 2, 1, 1);
                 
@@ -121,6 +126,7 @@ const WorkspaceBarSettings = new GObject.Class({
         this.spnPosition.set_value (this._settings.get_int(Keys.panelPosIndex));
         this.spnPosition.set_digits (0);
         this.spnPosition.set_wrap (false);
+        this._setPositionIndexChange(this.spnPosition);
         this.spnPosition.connect ('value-changed', Lang.bind (this, this._setPositionIndexChange));
         this.attach(this.spnPosition, 1, 3, 1, 1);
         
@@ -142,12 +148,13 @@ const WorkspaceBarSettings = new GObject.Class({
         this.attach(lblOverview, 0, 5, 1, 1);
         
         // Show Overview switch
-        let swOverlay = new Gtk.Switch({
+        let swOverview = new Gtk.Switch({
             active: this._settings.get_boolean(Keys.overviewMode),
             halign: Gtk.Align.END
         });
-        swOverlay.connect ('notify::active', Lang.bind (this, this._setOverViewMode));
-        this.attach(swOverlay, 1, 5, 1, 1);
+        this._setOverViewMode(swOverview);
+        swOverview.connect ('notify::active', Lang.bind (this, this._setOverViewMode));
+        this.attach(swOverview, 1, 5, 1, 1);
         
         // Show Wrap Around label
         let lblWrapAround = new Gtk.Label({
@@ -162,6 +169,7 @@ const WorkspaceBarSettings = new GObject.Class({
             active: this._settings.get_boolean(Keys.wrapAroundMode),
             halign: Gtk.Align.END
         });
+        this._setWrapAroundMode(swWrapAround);
         swWrapAround.connect ('notify::active', Lang.bind (this, this._setWrapAroundMode));
         this.attach(swWrapAround, 1, 6, 1, 1);
         
@@ -178,6 +186,7 @@ const WorkspaceBarSettings = new GObject.Class({
             active: this._settings.get_boolean(Keys.emptyWorkStyle),
             halign: Gtk.Align.END
         });
+        this._setEmptyWorkspaceStyle(swEmptyWorkspace);
         swEmptyWorkspace.connect ('notify::active', Lang.bind (this, this._setEmptyWorkspaceStyle));
         this.attach(swEmptyWorkspace, 1, 7, 1, 1);
         
@@ -194,12 +203,13 @@ const WorkspaceBarSettings = new GObject.Class({
             active: this._settings.get_boolean(Keys.urgentWorkStyle),
             halign: Gtk.Align.END
         });
+        this._setUrgentWorkspaceStyle(swUrgentWorkspace);
         swUrgentWorkspace.connect ('notify::active', Lang.bind (this, this._setUrgentWorkspaceStyle));
         this.attach(swUrgentWorkspace, 1, 8, 1, 1);
         
         // Preferences mouse button label
         let lblMouseBtn = new Gtk.Label({
-            label: "Button to open the preferences dialog",
+            label: "Mouse button to open the preferences dialog",
             margin_left: 15,
             halign: Gtk.Align.START
         });
@@ -213,12 +223,65 @@ const WorkspaceBarSettings = new GObject.Class({
             this.cmbMouseBtn.append_text(mBtnBtn[i]);
         }
         this.cmbMouseBtn.set_active(mBtnNum.indexOf(this._settings.get_int(Keys.prefsMouseBtn)));
+        this._onBtnChanged(this.cmbMouseBtn);
         this.cmbMouseBtn.connect ('changed', Lang.bind (this, this._onBtnChanged));
         this.attach(this.cmbMouseBtn, 1, 9, 1, 1);
+        
+        // Workspace label format
+        let lblWorkspaceFormat = new Gtk.Label({
+            label: "<b>Workspace Label Format</b>",
+            hexpand: true,
+            halign: Gtk.Align.START,
+            use_markup: true
+        });
+        this.attach(lblWorkspaceFormat, 0, 10, 2, 1);
+        
+        // Workspace format label
+        let lblFormat = new Gtk.Label({
+            label: "Format for displaying the workspace labels",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblFormat, 0, 11, 1, 1);
+        
+        // Workspace format dropdown
+        this.cmbFormat = new Gtk.ComboBoxText({
+            halign: Gtk.Align.END
+        });
+        for (let i = 0; i < labelFormats.length; i++) {
+            this.cmbFormat.append_text(labelFormats[i]);
+        }
+        this.cmbFormat.set_active(labelFormats.indexOf(this._settings.get_string(Keys.labelFormat)));
+        this._onFormatChanged(this.cmbFormat);
+        this.cmbFormat.connect ('changed', Lang.bind (this, this._onFormatChanged));
+        this.attach(this.cmbFormat, 1, 11, 1, 1);
+        
+        // Workspace label separator label
+        let lblSeparator = new Gtk.Label({
+            label: "Workspace label separator\n<span font_size='small'>Add spaces here as they will not be automatically added otherwise</span>",
+            margin_left: 15,
+            use_markup: true,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblSeparator, 0, 12, 1, 1);
+        
+        // Workspace label separator text entry
+        this.txtSeparator = new Gtk.Entry({
+            halign: Gtk.Align.END
+        });
+        this.txtSeparator.set_text(this._settings.get_string(Keys.labelSeparator));
+        this._onSeparatorChanged();
+        this.txtSeparator.connect ('changed', Lang.bind (this, this._onSeparatorChanged));
+        this.txtSeparator.connect ('activate', Lang.bind (this, this._onSeparatorChanged));
+        this.attach(this.txtSeparator, 1, 12, 1, 1);
     },
     
     _capCase: function(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+    
+    _lowCase: function(str) {
+        return str.charAt(0).toLowerCase() + str.slice(1);
     },
     
     _onPositionChanged: function() {
@@ -255,6 +318,15 @@ const WorkspaceBarSettings = new GObject.Class({
         this._settings.set_int(Keys.prefsMouseBtn, mBtnNum[activeItem]);
     },
     
+    _onFormatChanged: function() {
+        let activeItem = this.cmbFormat.get_active();
+        this._settings.set_string(Keys.labelFormat, labelFormats[activeItem]);
+    },
+    
+    _onSeparatorChanged: function() {
+        this._settings.set_string(Keys.labelSeparator, this.txtSeparator.get_text());
+    },
+    
     _resetSettings: function() {
         this._settings.set_string(Keys.panelPos, positions[0]);
         this._settings.set_boolean(Keys.panelPosChange, false);
@@ -264,6 +336,7 @@ const WorkspaceBarSettings = new GObject.Class({
         this._settings.set_boolean(Keys.emptyWorkStyle, true);
         this._settings.set_boolean(Keys.urgentWorkStyle, true);
         this._settings.set_boolean(Keys.urgentWorkStyle, mBtnNum[1]);
+        this._settings.set_string(Keys.labelFormat, labelFormats[1]);
     }
 });
 
