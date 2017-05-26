@@ -280,7 +280,7 @@ WorkspaceBar.prototype = {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
             }
             if (this.hideEmpty == true) {
-                if (emptyWorkspaces[x] == "empty") {
+                if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty") {
                     continue;
                 }
             }
