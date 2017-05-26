@@ -79,6 +79,7 @@ WorkspaceBar.prototype = {
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, function(w) {
             this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
         })));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.hideEmptyWork, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.emptyWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.urgentWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, function(w) {
@@ -98,6 +99,7 @@ WorkspaceBar.prototype = {
         this.boxIndex = this._settings.get_int(Keys.panelPosIndex);
         this.overViewMode = this._settings.get_boolean(Keys.overviewMode);
         this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
+        this.hideEmpty = this._settings.get_boolean(Keys.hideEmptyWork);
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
         this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
         this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
@@ -163,6 +165,7 @@ WorkspaceBar.prototype = {
     },
     
     _setWorkspaceStyle: function() {
+        this.hideEmpty = this._settings.get_boolean(Keys.hideEmptyWork);
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
         this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
         this._buildWorkSpaceBtns();
@@ -229,25 +232,15 @@ WorkspaceBar.prototype = {
             // Is .is_skip_taskbar() also relevant here?
             if (win.is_on_all_workspaces()) { continue; }
             let workspaceIndex = win.get_workspace().index();
-            if (win.urgent || win.demands_attention) {
-                if (this.urgentWorkspaceStyle) {
-                    urgentWorkspaces[workspaceIndex] = "urgent";
-                } else {
-                    urgentWorkspaces[workspaceIndex] = "not-urgent";
-                }
-            }
+            if (win.urgent || win.demands_attention) { urgentWorkspaces[workspaceIndex] = "urgent"; }
+            else { urgentWorkspaces[workspaceIndex] = "not-urgent"; }
             emptyWorkspaces[workspaceIndex] = workspaceIndex;
         }
         
         // Check for and identify actual empty workspaces
         for (let i = 0; i <= workSpaces; i++) {
-            if (this.emptyWorkspaceStyle) {
-                if (emptyWorkspaces[i] == undefined) {
-                    emptyWorkspaces[i] = "empty";
-                } else {
-                    emptyWorkspaces[i] = "not-empty";
-                }
-            }
+            if (emptyWorkspaces[i] == undefined) { emptyWorkspaces[i] = "empty"; }
+            else { emptyWorkspaces[i] = "not-empty"; }
         }
 
         for (let x = 0; x <= workSpaces; x++) {
@@ -275,23 +268,21 @@ WorkspaceBar.prototype = {
                     str = (x + 1).toString();
             }
             
-            /*
-            if (labelText.indexOf("Workspace") == -1) {
-                str = (x + 1) + this.wkspLabelSeparator + labelText;
-            } else {
-                str = (x + 1).toString();
-            }*/
-
             // Can't use true/false for indicators since it conflicts with workspace numbers
             //   equating to false (0) or true (1), so specific strings are used and checked.
             if (x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
-            } else if (x != this.currentWorkSpace && urgentWorkspaces[x] == "urgent") {
+            } else if (x != this.currentWorkSpace && urgentWorkspaces[x] == "urgent" && this.urgentWorkspaceStyle == true) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
-            } else if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty") {
+            } else if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty" && this.emptyWorkspaceStyle == true) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
             } else if (!emptyWorkspaces[x] || x != this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
+            }
+            if (this.hideEmpty == true) {
+                if (emptyWorkspaces[x] == "empty") {
+                    continue;
+                }
             }
             this.buttons[x] = new St.Button(); //{style_class: "panel-button"}
             this.buttons[x].set_child(this.labels[x]);

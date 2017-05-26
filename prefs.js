@@ -173,47 +173,13 @@ const WorkspaceBarSettings = new GObject.Class({
         swWrapAround.connect ('notify::active', Lang.bind (this, this._setWrapAroundMode));
         this.attach(swWrapAround, 1, 6, 1, 1);
         
-        // Show Empty Workspace label
-        let lblEmptyWorkspace = new Gtk.Label({
-            label: "Enable styling to indicate empty workspaces",
-            margin_left: 15,
-            halign: Gtk.Align.START
-        });
-        this.attach(lblEmptyWorkspace, 0, 7, 1, 1);
-        
-        // Show Empty Workspace switch
-        let swEmptyWorkspace = new Gtk.Switch({
-            active: this._settings.get_boolean(Keys.emptyWorkStyle),
-            halign: Gtk.Align.END
-        });
-        this._setEmptyWorkspaceStyle(swEmptyWorkspace);
-        swEmptyWorkspace.connect ('notify::active', Lang.bind (this, this._setEmptyWorkspaceStyle));
-        this.attach(swEmptyWorkspace, 1, 7, 1, 1);
-        
-        // Show Urgent Workspace label
-        let lblUrgentWorkspace = new Gtk.Label({
-            label: "Enable styling to indicate urgent workspaces",
-            margin_left: 15,
-            halign: Gtk.Align.START
-        });
-        this.attach(lblUrgentWorkspace, 0, 8, 1, 1);
-        
-        // Show Urgent Workspace switch
-        let swUrgentWorkspace = new Gtk.Switch({
-            active: this._settings.get_boolean(Keys.urgentWorkStyle),
-            halign: Gtk.Align.END
-        });
-        this._setUrgentWorkspaceStyle(swUrgentWorkspace);
-        swUrgentWorkspace.connect ('notify::active', Lang.bind (this, this._setUrgentWorkspaceStyle));
-        this.attach(swUrgentWorkspace, 1, 8, 1, 1);
-        
         // Preferences mouse button label
         let lblMouseBtn = new Gtk.Label({
             label: "Mouse button to open the preferences dialog",
             margin_left: 15,
             halign: Gtk.Align.START
         });
-        this.attach(lblMouseBtn, 0, 9, 1, 1);
+        this.attach(lblMouseBtn, 0, 7, 1, 1);
         
         // Preferences mouse button dropdown
         this.cmbMouseBtn = new Gtk.ComboBoxText({
@@ -225,16 +191,68 @@ const WorkspaceBarSettings = new GObject.Class({
         this.cmbMouseBtn.set_active(mBtnNum.indexOf(this._settings.get_int(Keys.prefsMouseBtn)));
         this._onBtnChanged(this.cmbMouseBtn);
         this.cmbMouseBtn.connect ('changed', Lang.bind (this, this._onBtnChanged));
-        this.attach(this.cmbMouseBtn, 1, 9, 1, 1);
+        this.attach(this.cmbMouseBtn, 1, 7, 1, 1);
         
-        // Workspace label format
+        // Workspace apperance/label format label
         let lblWorkspaceFormat = new Gtk.Label({
-            label: "<b>Workspace Label Format</b>",
+            label: "<b>Workspace Appearance/Label Format</b>",
             hexpand: true,
             halign: Gtk.Align.START,
             use_markup: true
         });
-        this.attach(lblWorkspaceFormat, 0, 10, 2, 1);
+        this.attach(lblWorkspaceFormat, 0, 8, 2, 1);
+        
+        // Hide Empty Workspaces label
+        let lblHideWorkspace = new Gtk.Label({
+            label: "Hide empty workspaces from the workspace list",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblHideWorkspace, 0, 9, 1, 1);
+        
+        // Hide Empty Workspace switch
+        let swHideWorkspace = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.hideEmptyWork),
+            halign: Gtk.Align.END
+        });
+        this._setHideWorkspace(swHideWorkspace);
+        swHideWorkspace.connect ('notify::active', Lang.bind (this, this._setHideWorkspace));
+        this.attach(swHideWorkspace, 1, 9, 1, 1);
+        
+        // Show Empty Workspace label
+        let lblEmptyWorkspace = new Gtk.Label({
+            label: "Enable styling to indicate empty workspaces\n<span font_size='small'>Will not be visible if option to hide workspaces is enabled</span>",
+            margin_left: 15,
+            use_markup: true,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblEmptyWorkspace, 0, 10, 1, 1);
+        
+        // Show Empty Workspace switch
+        let swEmptyWorkspace = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.emptyWorkStyle),
+            halign: Gtk.Align.END
+        });
+        this._setEmptyWorkspaceStyle(swEmptyWorkspace);
+        swEmptyWorkspace.connect ('notify::active', Lang.bind (this, this._setEmptyWorkspaceStyle));
+        this.attach(swEmptyWorkspace, 1, 10, 1, 1);
+        
+        // Show Urgent Workspace label
+        let lblUrgentWorkspace = new Gtk.Label({
+            label: "Enable styling to indicate urgent workspaces",
+            margin_left: 15,
+            halign: Gtk.Align.START
+        });
+        this.attach(lblUrgentWorkspace, 0, 11, 1, 1);
+        
+        // Show Urgent Workspace switch
+        let swUrgentWorkspace = new Gtk.Switch({
+            active: this._settings.get_boolean(Keys.urgentWorkStyle),
+            halign: Gtk.Align.END
+        });
+        this._setUrgentWorkspaceStyle(swUrgentWorkspace);
+        swUrgentWorkspace.connect ('notify::active', Lang.bind (this, this._setUrgentWorkspaceStyle));
+        this.attach(swUrgentWorkspace, 1, 11, 1, 1);
         
         // Workspace format label
         let lblFormat = new Gtk.Label({
@@ -242,7 +260,7 @@ const WorkspaceBarSettings = new GObject.Class({
             margin_left: 15,
             halign: Gtk.Align.START
         });
-        this.attach(lblFormat, 0, 11, 1, 1);
+        this.attach(lblFormat, 0, 12, 1, 1);
         
         // Workspace format dropdown
         this.cmbFormat = new Gtk.ComboBoxText({
@@ -254,7 +272,7 @@ const WorkspaceBarSettings = new GObject.Class({
         this.cmbFormat.set_active(labelFormats.indexOf(this._settings.get_string(Keys.labelFormat)));
         this._onFormatChanged(this.cmbFormat);
         this.cmbFormat.connect ('changed', Lang.bind (this, this._onFormatChanged));
-        this.attach(this.cmbFormat, 1, 11, 1, 1);
+        this.attach(this.cmbFormat, 1, 12, 1, 1);
         
         // Workspace label separator label
         let lblSeparator = new Gtk.Label({
@@ -263,7 +281,7 @@ const WorkspaceBarSettings = new GObject.Class({
             use_markup: true,
             halign: Gtk.Align.START
         });
-        this.attach(lblSeparator, 0, 12, 1, 1);
+        this.attach(lblSeparator, 0, 13, 1, 1);
         
         // Workspace label separator text entry
         this.txtSeparator = new Gtk.Entry({
@@ -273,7 +291,7 @@ const WorkspaceBarSettings = new GObject.Class({
         this._onSeparatorChanged();
         this.txtSeparator.connect ('changed', Lang.bind (this, this._onSeparatorChanged));
         this.txtSeparator.connect ('activate', Lang.bind (this, this._onSeparatorChanged));
-        this.attach(this.txtSeparator, 1, 12, 1, 1);
+        this.attach(this.txtSeparator, 1, 13, 1, 1);
     },
     
     _capCase: function(str) {
@@ -303,6 +321,10 @@ const WorkspaceBarSettings = new GObject.Class({
     
     _setWrapAroundMode: function(object) {
         this._settings.set_boolean(Keys.wrapAroundMode, object.active);
+    },
+    
+    _setHideWorkspace: function(object) {
+        this._settings.set_boolean(Keys.hideEmptyWork, object.active);
     },
     
     _setEmptyWorkspaceStyle: function(object) {
