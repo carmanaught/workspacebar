@@ -11,7 +11,7 @@ This is how the WorkspaceBar looks in action with the current choice of styling.
 
 These are the General Settings on the Settings page. These have been changed somewhat from the original settings.
 
-![WorkspaceBar - General Settings](http://i.imgur.com/Y75kjXG.png)
+![WorkspaceBar - General Settings](http://i.imgur.com/w689WPo.png)
 
 This is the Workspace Names settings page which is copied from the the Workspace Indicator extension (attributed in prefs.js) - [Gnome Extensions Page](https://extensions.gnome.org/extension/21/workspace-indicator/) - [Gnome Git](https://git.gnome.org/browse/gnome-shell-extensions/tree/extensions/workspace-indicator).
 
