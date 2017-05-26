@@ -6,9 +6,7 @@
   "name": "WorkspaceBar", 
   "settings-schema": "org.gnome.shell.extensions.workspacebar", 
   "shell-version": [
-    "3.4", 
-    "3.6", 
-    "3.8"
+    "3.24"
   ], 
   "url": "http://markbokil.com/downloads/extensions/", 
   "uuid": "workspace-bar@markbokil.com", 
