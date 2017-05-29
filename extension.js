@@ -160,10 +160,6 @@ WorkspaceBar.prototype = {
         }
     },
 
-    _doPrefsDialog: function() {
-        Main.Util.trySpawnCommandLine(prefsDialog);
-    },
-    
     _setWorkspaceStyle: function() {
         this.hideEmpty = this._settings.get_boolean(Keys.hideEmptyWork);
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
@@ -222,35 +218,16 @@ WorkspaceBar.prototype = {
         let urgentWorkspaces = [];
         let workSpaces = global.screen.n_workspaces - 1;
         let str = '';
-        let labelText = '';
-        let windows = '';
-        // GETS ALL EXISTING WINDOWS
-        windows = global.get_window_actors();
-        for (let i = 0; i < windows.length; i++) {
-            let winActor = windows[i];
-            let win = winActor.meta_window;
-            // Is .is_skip_taskbar() also relevant here?
-            if (win.is_on_all_workspaces()) { continue; }
-            let workspaceIndex = win.get_workspace().index();
-            if (win.urgent || win.demands_attention) { urgentWorkspaces[workspaceIndex] = "urgent"; }
-            else { urgentWorkspaces[workspaceIndex] = "not-urgent"; }
-            emptyWorkspaces[workspaceIndex] = workspaceIndex;
-        }
-        
-        // Check for and identify actual empty workspaces
-        for (let i = 0; i <= workSpaces; i++) {
-            if (emptyWorkspaces[i] == undefined) { emptyWorkspaces[i] = "empty"; }
-            else { emptyWorkspaces[i] = "not-empty"; }
-        }
+        let workspaceName = '';
 
         for (let x = 0; x <= workSpaces; x++) {
             let emptyName = false;
             // Get the workspace name for the workspace
-            let labelText = Meta.prefs_get_workspace_name(x);
+            let workspaceName = Meta.prefs_get_workspace_name(x);
 
             // Check that workspace has label (returns "Workspace <Num>" if not),
             //  which also explicitly blocks use of the word "Workspace" in a label.
-            if (labelText.indexOf("Workspace") == -1) {
+            if (workspaceName.indexOf("Workspace") == -1) {
                 emptyName = true;
             }
             
@@ -259,39 +236,56 @@ WorkspaceBar.prototype = {
                     str = (x + 1).toString();
                     break;
                 case "Number and Name":
-                    str = (x + 1) + this.wkspLabelSeparator + labelText;
+                    str = (x + 1) + this.wkspLabelSeparator + workspaceName;
                     break;
                 case "Name Only":
-                    str = labelText;
+                    str = workspaceName;
                     break;
                 default:
                     str = (x + 1).toString();
             }
             
-            // Can't use true/false for indicators since it conflicts with workspace numbers
-            //   equating to false (0) or true (1), so specific strings are used and checked.
+            // Get a list of windows on each workspace as we're building buttons and filter
+            //  in/out the windows we want/don't want. Credit to lyonell (all-windows@ezix.org)
+            //  from whom I copied and modified this snippet of code for my needs.
+            let metaWorkspace = global.screen.get_workspace_by_index(x);
+            let windows = metaWorkspace.list_windows();
+            let stickyWindows = windows.filter(function(w) {
+                return !w.is_skip_taskbar() && w.is_on_all_workspaces();
+            });
+            let regularWindows = windows.filter(function(w) {
+                return !w.is_on_all_workspaces();
+            });
+            let urgentWindows = windows.filter(function(w) {
+                return w.urgent || w.demands_attention;
+            });
+            
             if (x == this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
-            } else if (x != this.currentWorkSpace && urgentWorkspaces[x] == "urgent" && this.urgentWorkspaceStyle == true) {
+            } else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
-            } else if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty" && this.emptyWorkspaceStyle == true) {
+            } else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
-            } else if (!emptyWorkspaces[x] || x != this.currentWorkSpace) {
+            } else if (regularWindows.length > 0 || x != this.currentWorkSpace) {
                 this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
             }
+            
+            // Check empty workspace hiding status, check that it's not the current
+            //  workspace and that there are no windows on the workspace
             if (this.hideEmpty == true) {
-                if (x != this.currentWorkSpace && emptyWorkspaces[x] == "empty") {
+                if (x != this.currentWorkSpace && regularWindows.length == 0) {
                     continue;
                 }
             }
-            this.buttons[x] = new St.Button(); //{style_class: "panel-button"}
+            
+            this.buttons[x] = new St.Button();
             this.buttons[x].set_child(this.labels[x]);
             // Attach workspace number to .workspaceId property
             this.buttons[x].workspaceId = x;
             this.buttons[x].connect('button-press-event', Lang.bind(this, function(actor, event) {
                 let button = event.get_button();
                 if (button == this.btnMouseBtn) { //This preference defaults to right-mouse
-                    this._doPrefsDialog();
+                    Main.Util.trySpawnCommandLine(prefsDialog);
                 } else {
                     //Use the buttons workspaceId property for the index
                     this._setWorkSpace(actor.workspaceId);
@@ -304,23 +298,18 @@ WorkspaceBar.prototype = {
 
     _removeAllChildren: function(box) {
         let children = box.get_children();
-
         if (children) {
             let len = children.length;
-
-            for (let x = len - 1; x >= 0; x--) {
-                box.remove_actor(children[x]);
-            }
+            for (let x = len - 1; x >= 0; x--) { box.remove_actor(children[x]); }
         }
-
     },
 
     _setWorkSpace: function(index) {
         // Taken from workspace-indicator
         if(index >= 0 && index <  global.screen.n_workspaces) {
-	    let metaWorkspace = global.screen.get_workspace_by_index(index);
-	    metaWorkspace.activate(global.get_current_time());
-	}
+	        let metaWorkspace = global.screen.get_workspace_by_index(index);
+	        metaWorkspace.activate(global.get_current_time());
+	    }
 
         this._buildWorkSpaceBtns(); //refresh GUI after add,remove,switch workspace
     },
@@ -328,15 +317,20 @@ WorkspaceBar.prototype = {
     _activateScroll: function(offSet) {
         this.currentWorkSpace = this._getCurrentWorkSpace() + offSet;
         let workSpaces = global.screen.n_workspaces - 1;
-
+        let scrollBack = 0;
+        let scrollFwd = 0;
+        
         if (this.wraparoundMode) {
-            if (this.currentWorkSpace < 0) this.currentWorkSpace = workSpaces;
-            if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = 0;
+            scrollBack = workSpaces;
+            scrollFwd = 0;
         } else {
-            if (this.currentWorkSpace < 0) this.currentWorkSpace = 0;
-            if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = workSpaces;
+            scrollBack = 0;
+            scrollFwd = workSpaces;
         }
-
+        
+        if (this.currentWorkSpace < 0) this.currentWorkSpace = scrollBack;
+        if (this.currentWorkSpace > workSpaces) this.currentWorkSpace = scrollFwd;
+        
         this._setWorkSpace(this.currentWorkSpace);
     },
 
