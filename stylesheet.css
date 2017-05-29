@@ -4,12 +4,14 @@
 }
 
 /* For 4 item borders/directions, the order is top, right, bottom, left
-   and for 2 items the order is top/bottom, left/right */
+   and for 2 items the order is top/bottom, left/right. */
 
 /* There seems to be some bug with applying colors and only the top color
    is used for all borders, so the border-color is supplied separately to
    the border-bottom width and style. Even using the 4-set border-width
    and border-style appears to have problems. */
+
+/* To use a background color for the highlight, use rgba() to set color. */
 
 .activeBtn {
     padding: 2px 8px 1px 8px;
@@ -28,7 +30,6 @@
 .emptyBtn {
     padding: 2px 8px 1px 8px;
     color: #333333;
-    /*border-color: #222222;*/
     border-bottom: 2px solid;
 }
 
@@ -37,4 +38,12 @@
     color: #888888;
     border-color: #444444;
     border-bottom: 2px solid;
+}
+
+.highlight {
+    padding: 2px 8px 1px 8px;
+    color: #FFFFFF;
+    border-color: #4E9A06;
+    border-bottom: 3px solid;
+/*    background-color: rgba(78, 154, 6, 0.4);*/
 }

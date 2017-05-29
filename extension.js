@@ -73,16 +73,16 @@ WorkspaceBar.prototype = {
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPos, Lang.bind(this, this._setPosition)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosChange, Lang.bind(this, this._SetPositionChange)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.panelPosIndex, Lang.bind(this, this._SetPositionChange)));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.overviewMode, Lang.bind(this, function(w) {
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.overviewMode, Lang.bind(this, function() {
             this.overViewMode = this._settings.get_boolean(Keys.overviewMode);
         })));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, function(w) {
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.wrapAroundMode, Lang.bind(this, function() {
             this.wraparoundMode = this._settings.get_boolean(Keys.wrapAroundMode);
         })));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.hideEmptyWork, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.emptyWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.urgentWorkStyle, Lang.bind(this, this._setWorkspaceStyle)));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, function(w) {
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, function() {
             this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
         })));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelFormat, Lang.bind(this, this._setWorkspaceFormat)));
@@ -214,6 +214,7 @@ WorkspaceBar.prototype = {
         this.currentWorkSpace = this._getCurrentWorkSpace();
         this.buttons = []; //truncate arrays to release memory
         this.labels = [];
+        this.workspaceStyle = [];
         let emptyWorkspaces = [];
         let urgentWorkspaces = [];
         let workSpaces = global.screen.n_workspaces - 1;
@@ -260,15 +261,12 @@ WorkspaceBar.prototype = {
                 return w.urgent || w.demands_attention;
             });
             
-            if (x == this.currentWorkSpace) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "activeBtn" });
-            } else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "urgentBtn" });
-            } else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "emptyBtn" });
-            } else if (regularWindows.length > 0 || x != this.currentWorkSpace) {
-                this.labels[x] = new St.Label({ text: _(str), style_class: "inactiveBtn" });
-            }
+            if (x == this.currentWorkSpace) { this.workspaceStyle[x] = "activeBtn"; }
+            else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) { this.workspaceStyle[x] = "urgentBtn"; }
+            else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) { this.workspaceStyle[x] = "emptyBtn"; }
+            else if (regularWindows.length > 0 || x != this.currentWorkSpace) { this.workspaceStyle[x] = "inactiveBtn"; }
+            
+            this.labels[x] = new St.Label({ text: _(str), style_class: this.workspaceStyle[x] });
             
             // Check empty workspace hiding status, check that it's not the current
             //  workspace and that there are no windows on the workspace
@@ -282,6 +280,17 @@ WorkspaceBar.prototype = {
             this.buttons[x].set_child(this.labels[x]);
             // Attach workspace number to .workspaceId property
             this.buttons[x].workspaceId = x;
+            this.buttons[x].btnStyle = this.workspaceStyle[x];
+            this.buttons[x].connect('enter-event', Lang.bind(this, function(actor) {
+                if (actor.btnStyle != "urgentBtn") {
+                    actor.get_child().add_style_class_name("highlight");
+                }
+            }));
+            this.buttons[x].connect('leave-event', Lang.bind(this, function(actor) {
+                if (actor.btnStyle != "urgentBtn") {
+                    actor.get_child().remove_style_class_name("highlight");
+                }
+            }));
             this.buttons[x].connect('button-press-event', Lang.bind(this, function(actor, event) {
                 let button = event.get_button();
                 if (button == this.btnMouseBtn) { //This preference defaults to right-mouse
