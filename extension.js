@@ -228,7 +228,7 @@ WorkspaceBar.prototype = {
 
             // Check that workspace has label (returns "Workspace <Num>" if not),
             //  which also explicitly blocks use of the word "Workspace" in a label.
-            if (workspaceName.indexOf("Workspace") == -1) {
+            if (workspaceName.indexOf("Workspace") != -1) {
                 emptyName = true;
             }
             
@@ -237,10 +237,12 @@ WorkspaceBar.prototype = {
                     str = (x + 1).toString();
                     break;
                 case "Number and Name":
-                    str = (x + 1) + this.wkspLabelSeparator + workspaceName;
+                    if (emptyName == true) { str = (x + 1).toString(); }
+                    else { str = (x + 1) + this.wkspLabelSeparator + workspaceName; }
                     break;
                 case "Name Only":
-                    str = workspaceName;
+                    if (emptyName == true) { str = (x + 1).toString(); }
+                    else { str = workspaceName; }
                     break;
                 default:
                     str = (x + 1).toString();
@@ -322,7 +324,11 @@ WorkspaceBar.prototype = {
 
         this._buildWorkSpaceBtns(); //refresh GUI after add,remove,switch workspace
     },
-
+    
+    _changeLabel: function(actor, label) {
+        actor.set_child(new St.Label({ text: _(label), style_class: "activeBtn"}));
+    },
+    
     _activateScroll: function(offSet) {
         this.currentWorkSpace = this._getCurrentWorkSpace() + offSet;
         let workSpaces = global.screen.n_workspaces - 1;
