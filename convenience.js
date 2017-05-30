@@ -1,5 +1,3 @@
-/* -*- mode: js; js-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 const Gettext = imports.gettext;
 const Gio = imports.gi.Gio;
 
