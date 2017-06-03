@@ -4,7 +4,7 @@
  * forked and extended by carmanaught including code from null4bl3
  * version 1.0.1
  * credit: gcampax for some code from Workspace Indicator and Auto Move Windows,
- *   null4bl3 for some empty workspace detection
+ *   null4bl3 for some empty workspace detection idea
  */
 
 const Clutter = imports.gi.Clutter;
@@ -54,14 +54,6 @@ WorkspaceBar.prototype = {
     init: function(extensionMeta) {
         this.extensionMeta = extensionMeta;
         this._settings = Convenience.getSettings();
-        // The following init lines were copied from Auto Move Windows extension to
-        //  attach a window creation handler, to update the buttons when new windows
-        //  are created (even when created on another unfocused workspace)
-        this._windowTracker = Shell.WindowTracker.get_default();
-
-        let display = global.screen.get_display();
-        // Connect after so the handler from ShellWindowTracker has already run
-        this._windowCreatedId = display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns));
     },
 
     enable: function() {
@@ -127,9 +119,11 @@ WorkspaceBar.prototype = {
         this._screenSignals.push(global.screen.connect_after('workspace-added', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(global.screen.connect_after('workspace-switched', Lang.bind(this, this._buildWorkSpaceBtns)));
         // Connect after we've got display (let display above) to ensure we can get the signal
-        //   on 'MetaScreen' and avoid errors
+        //  on 'MetaScreen' and avoid errors and so the handler from ShellWindowTracker has
+        //  already run.
         this._screenSignals.push(display.connect_after('window-demands-attention', Lang.bind(this, this._buildWorkSpaceBtns)));
         this._screenSignals.push(display.connect_after('window-marked-urgent', Lang.bind(this, this._buildWorkSpaceBtns)));
+        this._screenSignals.push(display.connect_after('window-created', Lang.bind(this, this._buildWorkSpaceBtns)));
         
         this._buildWorkSpaceBtns();
     },
@@ -152,12 +146,6 @@ WorkspaceBar.prototype = {
         }
         this._settingsSignals = [];
         this._settingsSignals = null;
-        
-        // Copied from Auto Move Windows extension
-        if (this._windowCreatedId) {
-            global.screen.get_display().disconnect(this._windowCreatedId);
-            this._windowCreatedId = 0;
-        }
     },
 
     _setWorkspaceStyle: function() {
