@@ -46,15 +46,35 @@
     	<summary>Enable urgent workspace styling.</summary>
      	<description>Enables the use of the urgent workspace styling which is intended to indicate that a window demands attention or has an urgent window hint.</description>
     </key>
-    <key type="s" name="workspace-label-format">
-     	<default>'Number and Name'</default>
-    	<summary>Workspace label separator.</summary>
-      	<description>Specifies the separator to be used between the workspace number and the workspace title, if being displayed.</description>
+    <key type="b" name="workspace-label-number">
+     	<default>true</default>
+    	<summary>Show the workspace number.</summary>
+     	<description>.</description>
+    </key>
+    <key type="b" name="workspace-label-name">
+     	<default>true</default>
+    	<summary>Show the workspace name.</summary>
+     	<description>.</description>
     </key>
     <key type="s" name="workspace-label-separator">
      	<default>': '</default>
     	<summary>Workspace label separator.</summary>
       	<description>Specifies the separator to be used between the workspace number and the workspace title, if being displayed.</description>
+    </key>
+        <key type="b" name="workspace-label-indicator">
+     	<default>false</default>
+    	<summary>Enable the workspace indicators.</summary>
+     	<description>.</description>
+    </key>
+    <key type="b" name="workspace-label-indicator-border">
+     	<default>false</default>
+    	<summary>Show a border for workspace indicators.</summary>
+     	<description>.</description>
+    </key>
+    <key type="as" name="workspace-label-indicators">
+     	<default>[]</default>
+    	<summary>Workspace label indicators.</summary>
+      	<description>Specifies an array of label indicators to use instead of labels.</description>
     </key>
   </schema>
 </schemalist>

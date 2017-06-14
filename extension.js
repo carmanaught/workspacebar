@@ -77,8 +77,12 @@ WorkspaceBar.prototype = {
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.prefsMouseBtn, Lang.bind(this, function() {
             this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
         })));
-        this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelFormat, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.numLabel, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.nameLabel, Lang.bind(this, this._setWorkspaceFormat)));
         this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelSeparator, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.indLabel, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.indLabelBorder, Lang.bind(this, this._setWorkspaceFormat)));
+        this._settingsSignals.push(this._settings.connect('changed::' + Keys.labelIndicators, Lang.bind(this, this._buildWorkSpaceBtns)));
         
         // Detect workspace name changes and update buttons accordingly
         this._wkspNameSettings = new Gio.Settings({ schema_id: WORKSPACE_SCHEMA });
@@ -95,9 +99,14 @@ WorkspaceBar.prototype = {
         this.emptyWorkspaceStyle = this._settings.get_boolean(Keys.emptyWorkStyle);
         this.urgentWorkspaceStyle = this._settings.get_boolean(Keys.urgentWorkStyle);
         this.btnMouseBtn = this._settings.get_int(Keys.prefsMouseBtn);
-        this.wkspLabelFormat = this._settings.get_string(Keys.labelFormat);
+        this.wkspNumber = this._settings.get_boolean(Keys.numLabel);
+        this.wkspName = this._settings.get_boolean(Keys.nameLabel);
         this.wkspLabelSeparator = this._settings.get_string(Keys.labelSeparator);
-        
+        this.indStyle = this._settings.get_boolean(Keys.indLabel);
+        this.indStyleBorder = this._settings.get_boolean(Keys.indLabelBorder);
+        this.activityIndicators = [];
+        this.activityIndicators = this._settings.get_strv(Keys.labelIndicators);
+
         this.boxMain = new St.BoxLayout();
         this.boxMain.add_style_class_name("panelBox");
         this.buttonBox = new St.Button();
@@ -156,8 +165,11 @@ WorkspaceBar.prototype = {
     },
     
     _setWorkspaceFormat: function() {
-        this.wkspLabelFormat = this._settings.get_string(Keys.labelFormat);
+        this.wkspNumber = this._settings.get_boolean(Keys.numLabel);
+        this.wkspName = this._settings.get_boolean(Keys.nameLabel);
         this.wkspLabelSeparator = this._settings.get_string(Keys.labelSeparator);
+        this.indStyle = this._settings.get_boolean(Keys.indLabel);
+        this.indStyleBorder = this._settings.get_boolean(Keys.indLabelBorder);
         this._buildWorkSpaceBtns();
     },
     
@@ -198,18 +210,26 @@ WorkspaceBar.prototype = {
     },
 
     _buildWorkSpaceBtns: function() {
-        this._removeAllChildren(this.boxMain); //clear box container
+        this._removeAllChildren(this.boxMain); // Clear box container
         this.currentWorkSpace = this._getCurrentWorkSpace();
-        this.buttons = []; //truncate arrays to release memory
+        this.buttons = []; // Truncate arrays to release memory
         this.labels = [];
         this.workspaceStyle = [];
+        this.workspaceBorder = [];
         let emptyWorkspaces = [];
         let urgentWorkspaces = [];
         let workSpaces = global.screen.n_workspaces - 1;
+        let wsNum = '';
+        let wsName = '';
         let str = '';
         let workspaceName = '';
+        let actIndicator = false;
+        // Get this whenever rebuilding (called on activity indicator changes)
+        this.activityIndicators = [];
+        this.activityIndicators = this._settings.get_strv(Keys.labelIndicators);
 
         for (let x = 0; x <= workSpaces; x++) {
+            str = '';
             let emptyName = false;
             // Get the workspace name for the workspace
             let workspaceName = Meta.prefs_get_workspace_name(x);
@@ -220,20 +240,27 @@ WorkspaceBar.prototype = {
                 emptyName = true;
             }
             
-            switch (this.wkspLabelFormat) {
-                case "Number Only":
-                    str = (x + 1).toString();
-                    break;
-                case "Number and Name":
-                    if (emptyName == true) { str = (x + 1).toString(); }
-                    else { str = (x + 1) + this.wkspLabelSeparator + workspaceName; }
-                    break;
-                case "Name Only":
-                    if (emptyName == true) { str = (x + 1).toString(); }
-                    else { str = workspaceName; }
-                    break;
-                default:
-                    str = (x + 1).toString();
+            wsNum = (x + 1).toString();
+            wsName = workspaceName;
+            
+            if (this.wkspNumber === true && this.wkspName === false) {
+                str = wsNum;
+            }
+            if (this.wkspNumber === false && this.wkspName === true) {
+                if (this.indStyle === true) { actIndicator = true; }
+                else {
+                    if (emptyName == true) { str = wsNum; }
+                    else { str = wsName; }
+                }
+            }
+            if (this.wkspNumber === true && this.wkspName === true) {
+                if (this.indStyle === true) {
+                    actIndicator = true;
+                    str = wsNum + this.wkspLabelSeparator;
+                } else {
+                    if (emptyName == true) { str = wsNum; }
+                    else { str = wsNum + this.wkspLabelSeparator + wsName; }
+                }
             }
             
             // Get a list of windows on each workspace as we're building buttons and filter
@@ -251,12 +278,34 @@ WorkspaceBar.prototype = {
                 return w.urgent || w.demands_attention;
             });
             
-            if (x == this.currentWorkSpace) { this.workspaceStyle[x] = "activeBtn"; }
-            else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) { this.workspaceStyle[x] = "urgentBtn"; }
-            else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) { this.workspaceStyle[x] = "emptyBtn"; }
-            else if (regularWindows.length > 0 || x != this.currentWorkSpace) { this.workspaceStyle[x] = "inactiveBtn"; }
+            if (x == this.currentWorkSpace) {
+                this.workspaceStyle[x] = "activeBtn";
+                str = actIndicator === true ? str + this.activityIndicators[2] : str;
+            }
+            else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) {
+                this.workspaceStyle[x] = "urgentBtn";
+                this.workspaceBorder[x] = "urgentBorder";
+                str = actIndicator === true ? str + this.activityIndicators[1] : str;
+            }
+            else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) {
+                this.workspaceStyle[x] = "emptyBtn";
+                this.workspaceBorder[x] = "emptyBorder";
+                str = actIndicator === true ? str + this.activityIndicators[0] : str;
+            }
+            else if (regularWindows.length > 0 || x != this.currentWorkSpace) {
+                this.workspaceStyle[x] = "inactiveBtn";
+                this.workspaceBorder[x] = "inactiveBorder";
+                str = actIndicator === true ? str + this.activityIndicators[1] : str;
+            }
             
             this.labels[x] = new St.Label({ text: _(str), style_class: this.workspaceStyle[x] });
+            // Add border if not activity indicator style (except for the active workspace)
+            //  or if the border style override is active
+            if (x != this.currentWorkSpace && actIndicator === false) {
+               this.labels[x].add_style_class_name(this.workspaceBorder[x]);
+            } else if (x != this.currentWorkSpace && actIndicator === true && this.indStyleBorder === true) {
+               this.labels[x].add_style_class_name(this.workspaceBorder[x]);
+            }
             
             // Check empty workspace hiding status, check that it's not the current
             //  workspace and that there are no windows on the workspace
@@ -310,7 +359,7 @@ WorkspaceBar.prototype = {
 	        metaWorkspace.activate(global.get_current_time());
 	    }
 
-        this._buildWorkSpaceBtns(); //refresh GUI after add,remove,switch workspace
+        this._buildWorkSpaceBtns(); // Refresh GUI after add/remove/switch workspace
     },
     
     _changeLabel: function(actor, label) {

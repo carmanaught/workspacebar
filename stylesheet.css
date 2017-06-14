@@ -23,8 +23,11 @@
 .urgentBtn {
     padding: 2px 8px 1px 8px;
     color: #E50909;
-    border-color: #E50909;
     border-bottom: 3px solid;
+}
+
+.urgentBorder {
+    border-color: #E50909;
 }
 
 .emptyBtn {
@@ -33,11 +36,17 @@
     border-bottom: 2px solid;
 }
 
+.emptyBorder {
+}
+
 .inactiveBtn {
     padding: 2px 8px 1px 8px;
     color: #888888;
-    border-color: #444444;
     border-bottom: 2px solid;
+}
+
+.inactiveBorder {
+    border-color: #444444;
 }
 
 .highlight {
