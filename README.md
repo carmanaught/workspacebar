@@ -8,8 +8,9 @@ This is how the WorkspaceBar looks in action with the current choice of styling.
 - The urgent workspace with a window which is urgent or demands attention has a red underline with red text to draw attention to it
 - The inactive worspaces which have a window/application in them have a grey underline and uses light grey text
 - The empty workspaces with no window/application in them have no underline and uses dull grey text
+- When hovering over a workspace, a purple underline and bright white text is used
 
-This is how the WorkspaceBar looks using the Activity Indicator option and with some indicators in use (thanks to 1k2ka and others who have used the characters). The indicators are  (U+F10C),  (U+F192),  (U+F111) for those interested.
+This is how the WorkspaceBar looks using the Activity Indicator option and with some indicators in use (thanks to 1k2ka and others who have used the characters). The indicators are  (U+F10C),  (U+F192),  (U+F111) for those interested. If you can't see the characters, you'll likely need [Font Awesome](http://fontawesome.io/icons/) for them to be visible (check your distribution repositories).
 
 ![WorkspaceBar in action with indicators](http://i.imgur.com/owS3gHK.png)
 

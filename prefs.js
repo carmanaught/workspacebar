@@ -27,11 +27,6 @@ const positions = [
         "right"];
 const mBtnNum = [2, 3];
 const mBtnBtn = ["Middle", "Right"];
-const labelFormats = [
-        "Number Only",
-        "Number and Name",
-        "Name Only",
-        "Activity Indicator"];
 
 const WORKSPACE_SCHEMA = 'org.gnome.desktop.wm.preferences';
 const WORKSPACE_KEY = 'workspace-names';
@@ -603,11 +598,6 @@ const WorkspaceBarWorkspaceFormat = new GObject.Class({
         this._settings.set_boolean(Keys.indLabelBorder, object.active);
     },
     
-    _onFormatChanged: function() {
-        let activeItem = this.cmbFormat.get_active();
-        this._settings.set_string(Keys.labelFormat, labelFormats[activeItem]);
-    },
-    
     _onSeparatorChanged: function() {
         this._settings.set_string(Keys.labelSeparator, this.txtSeparator.get_text());
     },
@@ -624,7 +614,6 @@ const WorkspaceBarWorkspaceFormat = new GObject.Class({
         this._settings.set_boolean(Keys.emptyWorkStyle, true);
         this._settings.set_boolean(Keys.urgentWorkStyle, true);
         this._settings.set_boolean(Keys.urgentWorkStyle, mBtnNum[1]);
-        this._settings.set_string(Keys.labelFormat, labelFormats[1]);
     }
 });
 
