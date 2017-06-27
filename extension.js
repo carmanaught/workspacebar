@@ -141,17 +141,30 @@ WorkspaceBar.prototype = {
         let box = Main.panel["_" + this.boxPosition + "Box"];
         box.remove_actor(this.buttonBox);
         this.buttonBox = null;
-
+        let display = global.screen.get_display();
+        
+        //global.log("[WorkspaceBar] --> Are we even getting here?");
+        
         // Disconnect screen signals
         for (let x = 0; x < this._screenSignals.length; x++) {
-            global.screen.disconnect(this._screenSignals[x]);
+            // Disconnect the correct signals (x check is 0 indexed)
+            if (x < 4) {
+                global.screen.disconnect(this._screenSignals[x]);
+            } else {
+                display.disconnect(this._screenSignals[x]);
+            }
         }
         this._screenSignals = [];
         this._screenSignals = null;
 
         // Disconnect settings bindings
         for (let x = 0; x < this._settingsSignals.length; x++) {
-            global.screen.disconnect(this._settingsSignals[x]);
+            // Disconnect the correct signals (x check is 0 indexed)
+            if (x < 15) {
+                this._settings.disconnect(this._settingsSignals[x]);
+            } else {
+                this._wkspNameSettings.disconnect(this._settingsSignals[x]);
+            }
         }
         this._settingsSignals = [];
         this._settingsSignals = null;
@@ -187,7 +200,9 @@ WorkspaceBar.prototype = {
 
         // Remove box
         let box = Main.panel["_" + oldPosition + "Box"];
-        box.remove_actor(this.buttonBox);
+        if (this.buttonBox) {
+            box.remove_actor(this.buttonBox);
+        }
 
         // Add box
         box = Main.panel["_" + this.boxPosition + "Box"];
