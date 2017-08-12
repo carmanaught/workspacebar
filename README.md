@@ -1,5 +1,5 @@
 # WorkspaceBar
-Gnome Shell Extension for switching workspaces on the panel, forked from mbokil/workspacebar.
+Gnome Shell Extension for switching workspaces on the panel, forked from [mbokil/workspacebar](mbokil/workspacebar).
 
 This is how the WorkspaceBar looks in action with the current choice of styling. This can be changed in the stylesheet.css if desired.
 
@@ -51,5 +51,6 @@ Thanks to mbokil for the original extension and thanks to these people for some 
 - fmuellner
 - gcampax
 - null4bl3
+- lyonell
 
 Thanks to 1k2ka for the post of a desktop image that prompted me to add workspace indicators as a separate option to workspace labels

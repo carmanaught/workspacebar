@@ -13,15 +13,17 @@
 
 /* To use a background color for the highlight, use rgba() to set color. */
 
-.activeBtn {
+.baseStyle {
     padding: 2px 8px 1px 8px;
+}
+
+.activeBtn {
     color: #FFFFFF;
     border-color: #4D8CBC;
     border-bottom: 3px solid;
 }
 
 .urgentBtn {
-    padding: 2px 8px 1px 8px;
     color: #E50909;
     border-bottom: 3px solid;
 }
@@ -31,7 +33,6 @@
 }
 
 .emptyBtn {
-    padding: 2px 8px 1px 8px;
     color: #333333;
     border-bottom: 2px solid;
 }
@@ -40,7 +41,6 @@
 }
 
 .inactiveBtn {
-    padding: 2px 8px 1px 8px;
     color: #888888;
     border-bottom: 2px solid;
 }
@@ -50,7 +50,6 @@
 }
 
 .highlight {
-    padding: 2px 8px 1px 8px;
     color: #FFFFFF;
     border-color: #5C3566;
     border-bottom: 3px solid;
