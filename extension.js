@@ -59,6 +59,10 @@ WorkspaceBar.prototype = {
     },
 
     enable: function () {
+        // Set a couple of global variables
+        this.mouseOver = false;
+        this.mouseOverIndex = 0;
+        
         this._windowTracker = Shell.WindowTracker.get_default();
         let display = global.screen.get_display();
         
@@ -235,12 +239,15 @@ WorkspaceBar.prototype = {
                 var btnLabel = actor.get_child();
                 if (btnLabel.has_style_class_name("urgentBtn") != true) {
                     btnLabel.add_style_class_name("highlight");
+                    this.mouseOver = true;
+                    this.mouseOverIndex = actor.workspaceId;
                 }
             }));
             this.buttons[x].connect('leave-event', Lang.bind(this, function (actor) {
                 var btnLabel = actor.get_child();
                 if (btnLabel.has_style_class_name("urgentBtn") != true) {
                     actor.get_child().remove_style_class_name("highlight");
+                    this.mouseOver = false;
                 }
             }));
             
@@ -388,6 +395,12 @@ WorkspaceBar.prototype = {
                 wsLabel.add_style_class_name(wkspBorder[x]);
             } else if (x != this.currentWorkSpace && actIndicator === true && this.indStyleBorder === true) {
                 wsLabel.add_style_class_name(wkspBorder[x]);
+            }
+            
+            // Add the mouseover style when we're applying styles if the current button has
+            // the mouse in it
+            if (this.mouseOver === true && x == this.mouseOverIndex) {
+                wsLabel.add_style_class_name("highlight")
             }
         }
     },
