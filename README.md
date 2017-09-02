@@ -1,5 +1,7 @@
 # WorkspaceBar
-Gnome Shell Extension for switching workspaces on the panel, forked from [mbokil/workspacebar](mbokil/workspacebar).
+**Note:** I have put together a new extension called [Workspace Buttons](https://github.com/carmanaught/gnome-shell-extension-workspace-buttons/) implementing most of the functionality of this extension and I currently do not intend to continue development on this.
+
+Gnome Shell Extension for switching workspaces on the panel, forked from [mbokil/workspacebar](https://github.com/mbokil/workspacebar).
 
 This is how the WorkspaceBar looks in action with the current choice of styling. This can be changed in the stylesheet.css if desired.
 
@@ -12,7 +14,7 @@ This is how the WorkspaceBar looks in action with the current choice of styling.
 
 This is how the WorkspaceBar looks using the Activity Indicator option and with some indicators in use (thanks to 1k2ka and others who have used the characters). The indicators are  (U+F10C),  (U+F192),  (U+F111) for those interested. If you can't see the characters, you'll likely need [Font Awesome](http://fontawesome.io/icons/) for them to be visible (check your distribution repositories).
 
-![WorkspaceBar in action with indicators](http://i.imgur.com/owS3gHK.png)
+![WorkspaceBar in action with activity indicators](http://i.imgur.com/owS3gHK.png)
 
 These are the General Settings on the Settings page. These have been changed somewhat from the original settings.
 

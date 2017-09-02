@@ -14,18 +14,18 @@
 /* To use a background color for the highlight, use rgba() to set color. */
 
 .baseStyle {
-    padding: 2px 8px 1px 8px;
+    padding: 2px 8px 2px 8px;
 }
 
 .activeBtn {
     color: #FFFFFF;
     border-color: #4D8CBC;
-    border-bottom: 3px solid;
+    border-bottom: 2px solid;
 }
 
 .urgentBtn {
     color: #E50909;
-    border-bottom: 3px solid;
+    border-bottom: 2px solid;
 }
 
 .urgentBorder {
@@ -52,6 +52,6 @@
 .highlight {
     color: #FFFFFF;
     border-color: #5C3566;
-    border-bottom: 3px solid;
+    border-bottom: 2px solid;
 /*    background-color: rgba(78, 154, 6, 0.4);*/
 }

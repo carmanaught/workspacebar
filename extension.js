@@ -143,13 +143,13 @@ WorkspaceBar.prototype = {
         this.buttonBox = new St.Button();
         this.buttonBox.connect('enter-event', Lang.bind(this, this._showOverview));
         this.buttonBox.add_actor(this.boxMain);
-        
         // Add box to panel
         let box = Main.panel["_" + this.boxPosition + "Box"];
         if (this.boxIndexChange) {
             box.insert_child_at_index(this.buttonBox, this.boxIndex);
         } else {
-            box.insert_child_at_index(this.buttonBox, 0); // We'll use 0 as the default position
+            // A default position of 1 should put it after the activites button
+            box.insert_child_at_index(this.buttonBox, 1); 
         }
         
         // Set signals to get event changes that we need to handle
@@ -232,12 +232,11 @@ WorkspaceBar.prototype = {
             
             // Attach workspace number to .workspaceId property
             this.buttons[x].workspaceId = x;
-            
             // Connect to enter/leave events to give a "mouse-over" style, though this isn't
             // applied if the button is urgent.
             this.buttons[x].connect('enter-event', Lang.bind(this, function (actor) {
                 var btnLabel = actor.get_child();
-                if (btnLabel.has_style_class_name("urgentBtn") != true) {
+                if (btnLabel.has_style_class_name("urgentBtn") !== true) {
                     btnLabel.add_style_class_name("highlight");
                     this.mouseOver = true;
                     this.mouseOverIndex = actor.workspaceId;
@@ -245,7 +244,7 @@ WorkspaceBar.prototype = {
             }));
             this.buttons[x].connect('leave-event', Lang.bind(this, function (actor) {
                 var btnLabel = actor.get_child();
-                if (btnLabel.has_style_class_name("urgentBtn") != true) {
+                if (btnLabel.has_style_class_name("urgentBtn") !== true) {
                     actor.get_child().remove_style_class_name("highlight");
                     this.mouseOver = false;
                 }
@@ -254,7 +253,7 @@ WorkspaceBar.prototype = {
             // Connect to the button-press-event and scroll-event to handle changing workspace
             this.buttons[x].connect('button-press-event', Lang.bind(this, function (actor, event) {
                 let button = event.get_button();
-                if (button == this.btnMouseBtn) { // This preference defaults to right-mouse
+                if (button === this.btnMouseBtn) { // This preference defaults to right-mouse
                     Main.Util.trySpawnCommandLine(prefsDialog);
                 } else {
                     // Use the buttons workspaceId property for the index
@@ -262,7 +261,6 @@ WorkspaceBar.prototype = {
                 }
             }));
             this.buttons[x].connect('scroll-event', Lang.bind(this, this._onScrollEvent));
-            
             // Add the button with its label to the box layout
             this.boxMain.add_actor(this.buttons[x]);
             
@@ -327,7 +325,7 @@ WorkspaceBar.prototype = {
         this.currentWorkSpace = global.screen.get_active_workspace().index();
 
         for (let x = 0; x < workSpaces; x++) {
-            x = workSpaces == 1 ? setIndex : x;
+            x = workSpaces === 1 ? setIndex : x;
             
             let wsButton = this.boxMain.get_child_at_index(x);
             let wsLabel = wsButton.get_child();
@@ -351,18 +349,18 @@ WorkspaceBar.prototype = {
             // Check empty workspace hiding status, check that it's not the current
             // workspace and that there are no windows on the workspace and adjust
             // the visibility of the buttons as necessary.
-            if (this.hideEmpty == true) {
-                if (x != this.currentWorkSpace && regularWindows.length == 0) {
-                    if (wsButton.get_paint_visibility() == true) {
+            if (this.hideEmpty === true) {
+                if (x !== this.currentWorkSpace && regularWindows.length === 0) {
+                    if (wsButton.get_paint_visibility() === true) {
                         wsButton.hide();
                     }
                 } else {
-                    if (wsButton.get_paint_visibility() == false) {
+                    if (wsButton.get_paint_visibility() === false) {
                         wsButton.show();
                     }
                 }
             } else {
-                if (wsButton.get_paint_visibility() == false) {
+                if (wsButton.get_paint_visibility() === false) {
                     wsButton.show();
                 }
             }
@@ -371,18 +369,18 @@ WorkspaceBar.prototype = {
             wsLabel.set_style_class_name("baseStyle");
             
             // Do checks to determine the style that should be applied
-            if (x == this.currentWorkSpace) {
+            if (x === this.currentWorkSpace) {
                 wkspStyle[x] = "activeBtn";
             }
-            else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) {
+            else if (x !== this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle === true) {
                 wkspStyle[x] = "urgentBtn";
                 wkspBorder[x] = "urgentBorder";
             }
-            else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) {
+            else if (x !== this.currentWorkSpace && regularWindows.length === 0 && this.emptyWorkspaceStyle === true) {
                 wkspStyle[x] = "emptyBtn";
                 wkspBorder[x] = "emptyBorder";
             }
-            else if (regularWindows.length > 0 || x != this.currentWorkSpace) {
+            else if (regularWindows.length > 0 || x !== this.currentWorkSpace) {
                 wkspStyle[x] = "inactiveBtn";
                 wkspBorder[x] = "inactiveBorder";
             }
@@ -391,15 +389,15 @@ WorkspaceBar.prototype = {
             wsLabel.add_style_class_name(wkspStyle[x])
             // Add border if not activity indicator style (except for the active workspace)
             //  or if the border style override is active
-            if (x != this.currentWorkSpace && actIndicator === false) {
+            if (x !== this.currentWorkSpace && actIndicator === false) {
                 wsLabel.add_style_class_name(wkspBorder[x]);
-            } else if (x != this.currentWorkSpace && actIndicator === true && this.indStyleBorder === true) {
+            } else if (x !== this.currentWorkSpace && actIndicator === true && this.indStyleBorder === true) {
                 wsLabel.add_style_class_name(wkspBorder[x]);
             }
             
             // Add the mouseover style when we're applying styles if the current button has
             // the mouse in it
-            if (this.mouseOver === true && x == this.mouseOverIndex) {
+            if (this.mouseOver === true && x === this.mouseOverIndex) {
                 wsLabel.add_style_class_name("highlight")
             }
         }
@@ -427,7 +425,7 @@ WorkspaceBar.prototype = {
         workSpaces = setMode == "all" ? global.screen.n_workspaces : 1;
         
         for (let x = 0; x < workSpaces; x++) {
-            x = workSpaces == 1 ? setIndex : x;
+            x = workSpaces === 1 ? setIndex : x;
 
             let wsButton = this.boxMain.get_child_at_index(x);
             let wsLabel = wsButton.get_child();
@@ -439,7 +437,7 @@ WorkspaceBar.prototype = {
 
             // Check that workspace has label (returns "Workspace <Num>" if not),
             // which also explicitly blocks use of the word "Workspace" in a label.
-            if (workspaceName.indexOf("Workspace") != -1) {
+            if (workspaceName.indexOf("Workspace") !== -1) {
                 emptyName = true;
             }
             
@@ -453,7 +451,7 @@ WorkspaceBar.prototype = {
             if (this.wkspNumber === false && this.wkspName === true) {
                 if (this.indStyle === true) { actIndicator = true; }
                 else {
-                    if (emptyName == true) { str = wsNum; }
+                    if (emptyName === true) { str = wsNum; }
                     else { str = wsName; }
                 }
             }
@@ -462,7 +460,7 @@ WorkspaceBar.prototype = {
                     actIndicator = true;
                     str = wsNum + this.wkspLabelSeparator;
                 } else {
-                    if (emptyName == true) { str = wsNum; }
+                    if (emptyName === true) { str = wsNum; }
                     else { str = wsNum + this.wkspLabelSeparator + wsName; }
                 }
             }
@@ -482,16 +480,16 @@ WorkspaceBar.prototype = {
             });
             
             // Do checks to determine the format of the label
-            if (x == this.currentWorkSpace) {
+            if (x === this.currentWorkSpace) {
                 str = actIndicator === true ? str + this.activityIndicators[2] : str;
             }
-            else if (x != this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle == true) {
+            else if (x !== this.currentWorkSpace && urgentWindows.length > 0 && this.urgentWorkspaceStyle === true) {
                 str = actIndicator === true ? str + this.activityIndicators[1] : str;
             }
-            else if (x != this.currentWorkSpace && regularWindows.length == 0 && this.emptyWorkspaceStyle == true) {
+            else if (x !== this.currentWorkSpace && regularWindows.length === 0 && this.emptyWorkspaceStyle === true) {
                 str = actIndicator === true ? str + this.activityIndicators[0] : str;
             }
-            else if (regularWindows.length > 0 || x != this.currentWorkSpace) {
+            else if (regularWindows.length > 0 || x !== this.currentWorkSpace) {
                 str = actIndicator === true ? str + this.activityIndicators[1] : str;
             }
             
