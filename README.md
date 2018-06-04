@@ -1,3 +1,5 @@
+DEPRECATED: This repository has been deprecated and moved to https://gitlab.com/carmanaught/workspacebar/
+
 # WorkspaceBar
 **Note:** I have put together a new extension called [Workspace Buttons](https://github.com/carmanaught/gnome-shell-extension-workspace-buttons/) implementing most of the functionality of this extension and I currently do not intend to continue development on this.
 
